@@ -3,6 +3,7 @@ package dialog
 import (
 	"../models"
 	"github.com/lxn/walk"
+	. "github.com/lxn/walk/declarative"
 	"log"
 )
 

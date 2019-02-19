@@ -1,5 +1,9 @@
 package compos
 
+import (
+	. "github.com/lxn/walk/declarative"
+)
+
 func Prebook() []Widget {
 	return []Widget{
 		Composite{

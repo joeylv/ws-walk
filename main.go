@@ -7,6 +7,7 @@ import (
 	"./models"
 	"fmt"
 	"github.com/lxn/walk"
+	. "github.com/lxn/walk/declarative"
 	"log"
 	"time"
 )
