@@ -11,13 +11,13 @@ func init() {
 	//fmt.Println("Member Init")
 	//member :=Member{}
 }
-func AddMember(owner walk.Form, member *models.Member) (int, error) {
+func AddRecord(owner walk.Form, member *models.Record) (int, error) {
 	var dlg *walk.Dialog
 	var db *walk.DataBinder
 	var acceptPB, cancelPB *walk.PushButton
 	return Dialog{
 		AssignTo:      &dlg,
-		Title:         "添加会员",
+		Title:         "添加消费记录",
 		DefaultButton: &acceptPB,
 		CancelButton:  &cancelPB,
 		DataBinder: DataBinder{

@@ -9,92 +9,6 @@ import (
 	"log"
 )
 
-//type Combo struct {
-//	Index   int
-//	Name    string
-//	Mobile  string
-//	Remarks string
-//	checked bool
-//}
-
-//type ItemModel struct {
-//	walk.TableModelBase
-//	walk.SorterBase
-//	sortColumn int
-//	sortOrder  walk.SortOrder
-//	items      []*Combo
-//}
-//
-//func (m *ItemModel) RowCount() int {
-//	return len(m.items)
-//}
-//
-//func (m *ItemModel) Value(row, col int) interface{} {
-//	item := m.items[row]
-//
-//	switch col {
-//	case 0:
-//		return item.Index
-//	case 1:
-//		return item.Name
-//	case 2:
-//		return item.Mobile
-//	case 3:
-//		return item.Remarks
-//	}
-//	panic("unexpected col")
-//}
-//
-//func (m *ItemModel) Checked(row int) bool {
-//	return m.items[row].checked
-//}
-//
-//func (m *ItemModel) SetChecked(row int, checked bool) error {
-//	m.items[row].checked = checked
-//	return nil
-//}
-//
-//func (m *ItemModel) Sort(col int, order walk.SortOrder) error {
-//	m.sortColumn, m.sortOrder = col, order
-//
-//	sort.Stable(m)
-//
-//	return m.SorterBase.Sort(col, order)
-//}
-//
-//func (m *ItemModel) Len() int {
-//	return len(m.items)
-//}
-//
-//func (m *ItemModel) Less(i, j int) bool {
-//	a, b := m.items[i], m.items[j]
-//
-//	c := func(ls bool) bool {
-//		if m.sortOrder == walk.SortAscending {
-//			return ls
-//		}
-//
-//		return !ls
-//	}
-//
-//	switch m.sortColumn {
-//	case 0:
-//		return c(a.Index < b.Index)
-//	case 1:
-//		return c(a.Name < b.Name)
-//	case 2:
-//		return c(a.Mobile < b.Mobile)
-//	case 3:
-//		return c(a.Remarks < b.Remarks)
-//	}
-//
-//	panic("unreachable")
-//}
-//
-//func (m *ItemModel) Swap(i, j int) {
-//	m.items[i], m.items[j] = m.items[j], m.items[i]
-//}
-
 func ComboModel() *ItemModel {
 	m := new(ItemModel)
 	memList := models.Combo{}.Search()
@@ -115,14 +29,8 @@ func ComboModel() *ItemModel {
 	return m
 }
 
-type ComboMainWindow struct {
-	*walk.MainWindow
-	model *ItemModel
-	tv    *walk.TableView
-}
-
 func Combos(owner *walk.MainWindow) (int, error) {
-	mw := &ComboMainWindow{MainWindow: owner, model: ComboModel()}
+	mw := &MWindow{MainWindow: owner, model: ComboModel()}
 	var dlg *walk.Dialog
 	//var db *walk.DataBinder
 	//var acceptPB, cancelPB *walk.PushButton
@@ -208,7 +116,7 @@ func Combos(owner *walk.MainWindow) (int, error) {
 						Columns: []TableViewColumn{
 							{Title: "编号"},
 							{Title: "名称"},
-							{Title: "手机"},
+							{Title: "次数"},
 							{Title: "备注"},
 						},
 						Model: mw.model,
@@ -226,15 +134,7 @@ func Combos(owner *walk.MainWindow) (int, error) {
 	}.Run(owner)
 }
 
-func (mw *ComboMainWindow) tvItemactivated() {
-	msg := ``
-	for _, i := range mw.tv.SelectedIndexes() {
-		msg = msg + "\n" + mw.model.items[i].Name
-	}
-	walk.MsgBox(mw, "title", msg, walk.MsgBoxIconInformation)
-}
-
-func (mw *ComboMainWindow) openCombo() {
+func (mw *MWindow) openCombo() {
 	//walk.MsgBox(*mw, "title", "sss", walk.MsgBoxIconInformation)
 	//var outTE *walk.TextEdit
 	combo := new(models.Combo)
@@ -242,6 +142,14 @@ func (mw *ComboMainWindow) openCombo() {
 		log.Print(err)
 	} else if cmd == walk.DlgCmdOK {
 		fmt.Println("DlgCmdOK")
+		combo.Save()
+		mw.model.items = append(mw.model.items, &Item{
+			Index: mw.model.Len(),
+			Name:  combo.Name,
+			Count: combo.Count,
+			Price: combo.Price,
+		})
+		mw.model.PublishRowsReset()
 		//outTE.SetText(fmt.Sprintf("%+v", member))
 	}
 }

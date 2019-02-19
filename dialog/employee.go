@@ -11,13 +11,13 @@ func init() {
 	//fmt.Println("Member Init")
 	//member :=Member{}
 }
-func AddMember(owner walk.Form, member *models.Member) (int, error) {
+func AddEmployee(owner walk.Form, member *models.Employee) (int, error) {
 	var dlg *walk.Dialog
 	var db *walk.DataBinder
 	var acceptPB, cancelPB *walk.PushButton
 	return Dialog{
 		AssignTo:      &dlg,
-		Title:         "添加会员",
+		Title:         "添加员工",
 		DefaultButton: &acceptPB,
 		CancelButton:  &cancelPB,
 		DataBinder: DataBinder{
@@ -71,12 +71,34 @@ func AddMember(owner walk.Form, member *models.Member) (int, error) {
 						AssignTo: &acceptPB,
 						Text:     "OK",
 						OnClicked: func() {
+
+							//if db.Dirty() {
+							//	fmt.Println(db.Dirty())
+							//	fmt.Println(member.Name)
+							//	fmt.Println(db.DataSource())
+
 							if err := db.Submit(); err != nil {
 								log.Print(err)
 								walk.MsgBox(owner, "错误提示", err.Error(), walk.MsgBoxIconError)
 								return
 							}
 							dlg.Accept()
+							//} else {
+							//fmt.Println(db.Dirty())
+							//fmt.Println(member.Name)
+							//fmt.Println(member.Mobile)
+							//fmt.Println(member.Code)
+							//fmt.Println(member.Remarks)
+							//fmt.Println(db.DataSource())
+							//if err := db.Submit(); err != nil {
+							//	log.Print(err)
+							//	walk.MsgBox(owner, "错误提示", err.Error(), walk.MsgBoxIconError)
+							//	return
+							//}
+							//dbcon.Create("member", member.Name, member.Mobile, member.Code, member.Remarks)
+							//	walk.MsgBox(owner, "错误提示", "...", walk.MsgBoxIconError)
+							//}
+
 						},
 					},
 					PushButton{

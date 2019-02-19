@@ -9,94 +9,6 @@ import (
 	"log"
 )
 
-//
-//type Product struct {
-//	Index   int
-//	Name    string
-//	Price   int
-//	Remarks string
-//	checked bool
-//}
-//
-//type ItemModel struct {
-//	walk.TableModelBase
-//	walk.SorterBase
-//	sortColumn int
-//	sortOrder  walk.SortOrder
-//	items      []*Item
-//}
-//
-//func (m *ItemModel) RowCount() int {
-//	return len(m.items)
-//}
-//
-//func (m *ItemModel) Value(row, col int) interface{} {
-//	item := m.items[row]
-//	fmt.Println(m.items)
-//	switch col {
-//	case 0:
-//		return item.Index
-//	case 1:
-//		return item.Name
-//	case 2:
-//		return item.Price
-//	case 3:
-//		return item.Remarks
-//	}
-//	panic("unexpected col")
-//}
-//
-//func (m *ItemModel) Checked(row int) bool {
-//	return m.items[row].checked
-//}
-//
-//func (m *ItemModel) SetChecked(row int, checked bool) error {
-//	m.items[row].checked = checked
-//	return nil
-//}
-//
-//func (m *ItemModel) Sort(col int, order walk.SortOrder) error {
-//	m.sortColumn, m.sortOrder = col, order
-//
-//	sort.Stable(m)
-//
-//	return m.SorterBase.Sort(col, order)
-//}
-//
-//func (m *ItemModel) Len() int {
-//	return len(m.items)
-//}
-//
-//func (m *ItemModel) Less(i, j int) bool {
-//	fmt.Println(m)
-//	a, b := m.items[i], m.items[j]
-//
-//	c := func(ls bool) bool {
-//		if m.sortOrder == walk.SortAscending {
-//			return ls
-//		}
-//
-//		return !ls
-//	}
-//
-//	switch m.sortColumn {
-//	case 0:
-//		return c(a.Index < b.Index)
-//	case 1:
-//		return c(a.Name < b.Name)
-//	case 2:
-//		return c(a.Price < b.Price)
-//	case 3:
-//		return c(a.Remarks < b.Remarks)
-//	}
-//
-//	panic("unreachable")
-//}
-//
-//func (m *ItemModel) Swap(i, j int) {
-//	m.items[i], m.items[j] = m.items[j], m.items[i]
-//}
-//
 func ProductModel() *ItemModel {
 	memList := models.Prod{}.Search()
 	m := new(ItemModel)
@@ -112,14 +24,14 @@ func ProductModel() *ItemModel {
 	return m
 }
 
-type ProductMainWindow struct {
-	*walk.MainWindow
-	model *ItemModel
-	tv    *walk.TableView
-}
+//type ProductMainWindow struct {
+//	*walk.MainWindow
+//	model *ItemModel
+//	tv    *walk.TableView
+//}
 
 func Products(owner *walk.MainWindow) (int, error) {
-	mw := &ProductMainWindow{MainWindow: owner, model: ProductModel()}
+	mw := &MWindow{MainWindow: owner, model: ProductModel()}
 	var dlg *walk.Dialog
 	//var db *walk.DataBinder
 	//var acceptPB, cancelPB *walk.PushButton
@@ -138,7 +50,7 @@ func Products(owner *walk.MainWindow) (int, error) {
 						OnClicked: mw.openProduct,
 					},
 					PushButton{
-						Text: "Delete",
+						Text: "删除",
 						OnClicked: func() {
 							var items []*Item
 							remove := mw.tv.SelectedIndexes()
@@ -201,15 +113,7 @@ func Products(owner *walk.MainWindow) (int, error) {
 	}.Run(owner)
 }
 
-func (mw *ProductMainWindow) tvItemactivated() {
-	msg := ``
-	for _, i := range mw.tv.SelectedIndexes() {
-		msg = msg + "\n" + mw.model.items[i].Name
-	}
-	walk.MsgBox(mw, "title", msg, walk.MsgBoxIconInformation)
-}
-
-func (mw *ProductMainWindow) openProduct() {
+func (mw *MWindow) openProduct() {
 	prod := new(models.Prod)
 	if cmd, err := dialog.AddProduct(mw, prod); err != nil {
 		log.Print(err)
@@ -222,6 +126,6 @@ func (mw *ProductMainWindow) openProduct() {
 			Price:   prod.Price,
 			Remarks: prod.Remarks,
 		})
-		//mw.model.PublishRowsReset()
+		mw.model.PublishRowsReset()
 	}
 }

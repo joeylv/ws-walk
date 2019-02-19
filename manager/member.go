@@ -9,92 +9,6 @@ import (
 	"log"
 )
 
-//type Condom struct {
-//	Index   int
-//	Name    string
-//	Mobile  string
-//	Remarks string
-//	checked bool
-//}
-
-//type ItemModel struct {
-//	walk.TableModelBase
-//	walk.SorterBase
-//	sortColumn int
-//	sortOrder  walk.SortOrder
-//	items      []*Condom
-//}
-
-//func (m *ItemModel) RowCount() int {
-//	return len(m.items)
-//}
-//
-//func (m *ItemModel) Value(row, col int) interface{} {
-//	item := m.items[row]
-//
-//	switch col {
-//	case 0:
-//		return item.Index
-//	case 1:
-//		return item.Name
-//	case 2:
-//		return item.Mobile
-//	case 3:
-//		return item.Remarks
-//	}
-//	panic("unexpected col")
-//}
-//
-//func (m *ItemModel) Checked(row int) bool {
-//	return m.items[row].checked
-//}
-//
-//func (m *ItemModel) SetChecked(row int, checked bool) error {
-//	m.items[row].checked = checked
-//	return nil
-//}
-//
-//func (m *ItemModel) Sort(col int, order walk.SortOrder) error {
-//	m.sortColumn, m.sortOrder = col, order
-//
-//	sort.Stable(m)
-//
-//	return m.SorterBase.Sort(col, order)
-//}
-//
-//func (m *ItemModel) Len() int {
-//	return len(m.items)
-//}
-//
-//func (m *ItemModel) Less(i, j int) bool {
-//	a, b := m.items[i], m.items[j]
-//
-//	c := func(ls bool) bool {
-//		if m.sortOrder == walk.SortAscending {
-//			return ls
-//		}
-//
-//		return !ls
-//	}
-//
-//	switch m.sortColumn {
-//	case 0:
-//		return c(a.Index < b.Index)
-//	case 1:
-//		return c(a.Name < b.Name)
-//	case 2:
-//		return c(a.Mobile < b.Mobile)
-//	case 3:
-//		return c(a.Remarks < b.Remarks)
-//	}
-//
-//	panic("unreachable")
-//}
-//
-//func (m *ItemModel) Swap(i, j int) {
-//	m.items[i], m.items[j] = m.items[j], m.items[i]
-//}
-//
 func MemberModel() *ItemModel {
 	memList := models.Member{}.Search()
 
@@ -114,14 +28,14 @@ func MemberModel() *ItemModel {
 	return m
 }
 
-type CondomMainWindow struct {
+type MWindow struct {
 	*walk.MainWindow
 	model *ItemModel
 	tv    *walk.TableView
 }
 
 func Member(owner *walk.MainWindow) (int, error) {
-	mw := &CondomMainWindow{MainWindow: owner, model: MemberModel()}
+	mw := &MWindow{MainWindow: owner, model: MemberModel()}
 	var dlg *walk.Dialog
 	//var db *walk.DataBinder
 	//var acceptPB, cancelPB *walk.PushButton
@@ -149,7 +63,7 @@ func Member(owner *walk.MainWindow) (int, error) {
 						//},
 					},
 					PushButton{
-						Text: "Delete",
+						Text: "删除",
 						OnClicked: func() {
 							var items []*Item
 							remove := mw.tv.SelectedIndexes()
@@ -207,34 +121,13 @@ func Member(owner *walk.MainWindow) (int, error) {
 						},
 					},
 				},
-				Children: []Widget{
-					TableView{
-						AssignTo:         &mw.tv,
-						CheckBoxes:       true,
-						ColumnsOrderable: true,
-						MultiSelection:   true,
-						Columns: []TableViewColumn{
-							{Title: "编号"},
-							{Title: "名称"},
-							{Title: "手机"},
-							{Title: "备注"},
-						},
-						Model: mw.model,
-						OnCurrentIndexChanged: func() {
-							i := mw.tv.CurrentIndex()
-							if 0 <= i {
-								fmt.Printf("OnCurrentIndexChanged: %v\n", mw.model.items[i].Name)
-							}
-						},
-						OnItemActivated: mw.tvItemactivated,
-					},
-				},
+				Children: mw.tableColumn(),
 			},
 		},
 	}.Run(owner)
 }
 
-func (mw *CondomMainWindow) tvItemactivated() {
+func (mw *MWindow) tvItemactivated() {
 	msg := ``
 	for _, i := range mw.tv.SelectedIndexes() {
 		msg = msg + "\n" + mw.model.items[i].Name
@@ -242,7 +135,7 @@ func (mw *CondomMainWindow) tvItemactivated() {
 	walk.MsgBox(mw, "title", msg, walk.MsgBoxIconInformation)
 }
 
-func (mw *CondomMainWindow) openMember() {
+func (mw *MWindow) openMember() {
 	//walk.MsgBox(*mw, "title", "sss", walk.MsgBoxIconInformation)
 	//var outTE *walk.TextEdit
 	member := new(models.Member)
@@ -250,6 +143,39 @@ func (mw *CondomMainWindow) openMember() {
 		log.Print(err)
 	} else if cmd == walk.DlgCmdOK {
 		fmt.Println("DlgCmdOK")
+		member.Save()
+		mw.model.items = append(mw.model.items, &Item{
+			Index:   mw.model.Len(),
+			Name:    member.Name,
+			Mobile:  member.Mobile,
+			Remarks: member.Remarks,
+		})
+		mw.model.PublishRowsReset()
 		//outTE.SetText(fmt.Sprintf("%+v", member))
+	}
+}
+
+func (mw MWindow) tableColumn() []Widget {
+	return []Widget{
+		TableView{
+			AssignTo:         &mw.tv,
+			CheckBoxes:       true,
+			ColumnsOrderable: true,
+			MultiSelection:   true,
+			Columns: []TableViewColumn{
+				{Title: "编号"},
+				{Title: "名称"},
+				{Title: "手机"},
+				{Title: "备注"},
+			},
+			Model: mw.model,
+			OnCurrentIndexChanged: func() {
+				i := mw.tv.CurrentIndex()
+				if 0 <= i {
+					fmt.Printf("OnCurrentIndexChanged: %v\n", mw.model.items[i].Name)
+				}
+			},
+			OnItemActivated: mw.tvItemactivated,
+		},
 	}
 }

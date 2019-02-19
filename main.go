@@ -48,10 +48,10 @@ func main() {
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyO},
 						OnTriggered: mw.openAction_Triggered,
 					},
-					Action{
-						Text:        "Dialog",
-						OnTriggered: mw.openDialog,
-					},
+					//Action{
+					//	Text:        "Dialog",
+					//	OnTriggered: mw.openDialog,
+					//},
 					//Action{
 					//	Text:        "Member",
 					//	OnTriggered: mw.openMember,
@@ -71,6 +71,10 @@ func main() {
 					Action{
 						Text:        "疗程",
 						OnTriggered: mw.openProducts,
+					},
+					Action{
+						Text:        "员工",
+						OnTriggered: mw.openEmployees,
 					},
 					Menu{
 						AssignTo: &recentMenu,
@@ -126,23 +130,26 @@ func main() {
 					Text:  "View",
 					Image: "/img/document-properties.png",
 					Items: []MenuItem{
-
 						Action{
 							Text:        "会员",
 							OnTriggered: mw.newMember,
 						},
 						Action{
-							Text:        "X",
-							OnTriggered: mw.changeViewAction_Triggered,
+							Text:        "员工",
+							OnTriggered: mw.newEmployee,
 						},
-						Action{
-							Text:        "Y",
-							OnTriggered: mw.changeViewAction_Triggered,
-						},
-						Action{
-							Text:        "Z",
-							OnTriggered: mw.changeViewAction_Triggered,
-						},
+						//Action{
+						//	Text:        "X",
+						//	OnTriggered: mw.changeViewAction_Triggered,
+						//},
+						//Action{
+						//	Text:        "Y",
+						//	OnTriggered: mw.changeViewAction_Triggered,
+						//},
+						//Action{
+						//	Text:        "Z",
+						//	OnTriggered: mw.changeViewAction_Triggered,
+						//},
 					},
 				},
 				Separator{},
@@ -240,7 +247,14 @@ func (mw *MyMainWindow) openManager() {
 		outTE.SetText(fmt.Sprintf("%+v", "CMD"))
 	}
 }
-
+func (mw *MyMainWindow) openEmployees() {
+	var outTE *walk.TextEdit
+	if cmd, err := manager.Employees(mw.MainWindow); err != nil {
+		log.Print(err)
+	} else if cmd == walk.DlgCmdOK {
+		outTE.SetText(fmt.Sprintf("%+v", "CMD"))
+	}
+}
 func (mw *MyMainWindow) openReserve() {
 	var outTE *walk.TextEdit
 	if cmd, err := manager.PreBooks(mw.MainWindow); err != nil {
@@ -281,6 +295,17 @@ func (mw *MyMainWindow) newMember() {
 	}
 }
 
+func (mw *MyMainWindow) newEmployee() {
+	//var outTE *walk.TextEdit
+	emp := new(models.Employee)
+	if cmd, err := dialog.AddEmployee(mw, emp); err != nil {
+		log.Print(err)
+	} else if cmd == walk.DlgCmdOK {
+		fmt.Println("OK", emp)
+		emp.Save()
+		//outTE.SetText(fmt.Sprintf("%+v", member))
+	}
+}
 func (mw *MyMainWindow) newPreBook() {
 	//var outTE *walk.TextEdit
 	preBook := new(models.PreBook)

@@ -7,117 +7,35 @@ import (
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
 	"log"
-	"sort"
 )
 
-type Item struct {
-	Index   int
-	Name    string
-	Mobile  string
-	Price   int
-	Count   int
-	Remarks string
-	checked bool
-}
+func EmployeeModel() *ItemModel {
+	memList := models.Employee{}.Search()
 
-type ItemModel struct {
-	walk.TableModelBase
-	walk.SorterBase
-	sortColumn int
-	sortOrder  walk.SortOrder
-	items      []*Item
-}
-
-func (m *ItemModel) RowCount() int {
-	return len(m.items)
-}
-
-func (m *ItemModel) Value(row, col int) interface{} {
-	item := m.items[row]
-
-	switch col {
-	case 0:
-		return item.Index
-	case 1:
-		return item.Name
-	case 2:
-		return item.Mobile
-	case 3:
-		return item.Remarks
-	}
-	panic("unexpected col")
-}
-
-func (m *ItemModel) Checked(row int) bool {
-	return m.items[row].checked
-}
-
-func (m *ItemModel) SetChecked(row int, checked bool) error {
-	m.items[row].checked = checked
-	return nil
-}
-
-func (m *ItemModel) Sort(col int, order walk.SortOrder) error {
-	m.sortColumn, m.sortOrder = col, order
-	sort.Stable(m)
-	return m.SorterBase.Sort(col, order)
-}
-
-func (m *ItemModel) Len() int {
-	return len(m.items)
-}
-
-func (m *ItemModel) Less(i, j int) bool {
-	a, b := m.items[i], m.items[j]
-
-	c := func(ls bool) bool {
-		if m.sortOrder == walk.SortAscending {
-			return ls
-		}
-
-		return !ls
-	}
-
-	switch m.sortColumn {
-	case 0:
-		return c(a.Index < b.Index)
-	case 1:
-		return c(a.Name < b.Name)
-	case 2:
-		return c(a.Mobile < b.Mobile)
-	case 3:
-		return c(a.Remarks < b.Remarks)
-	}
-
-	panic("unreachable")
-}
-
-func (m *ItemModel) Swap(i, j int) {
-	m.items[i], m.items[j] = m.items[j], m.items[i]
-}
-
-func PreBookModel() *ItemModel {
-	memList := models.PreBook{}.Search()
 	m := new(ItemModel)
 	m.items = make([]*Item, len(memList))
 	for i, j := range memList {
+		fmt.Println(i)
+		fmt.Println(j.Name)
+		//m.items
 		m.items[i] = &Item{
 			Index:   i,
 			Name:    j.Name,
+			Mobile:  j.Mobile,
 			Remarks: j.Remarks,
 		}
 	}
 	return m
 }
 
-func PreBooks(owner *walk.MainWindow) (int, error) {
-	mw := &MWindow{MainWindow: owner, model: PreBookModel()}
+func Employees(owner *walk.MainWindow) (int, error) {
+	mw := &MWindow{MainWindow: owner, model: EmployeeModel()}
 	var dlg *walk.Dialog
 	//var db *walk.DataBinder
 	//var acceptPB, cancelPB *walk.PushButton
 	return Dialog{
 		AssignTo: &dlg,
-		Title:    "预约管理",
+		Title:    "会员管理",
 		MinSize:  Size{800, 600},
 		Layout:   VBox{},
 		Children: []Widget{
@@ -127,7 +45,16 @@ func PreBooks(owner *walk.MainWindow) (int, error) {
 					HSpacer{},
 					PushButton{
 						Text:      "添加",
-						OnClicked: mw.openPreBook,
+						OnClicked: mw.openEmployee,
+						//func() {
+						//	//mw.model.items = append(mw.model.items, &Condom{
+						//	//	Index: mw.model.Len() + 1,
+						//	//	Name:  "第六感",
+						//	//	Price: mw.model.Len() * 5,
+						//	//})
+						//	mw.model.PublishRowsReset()
+						//	mw.tv.SetSelectedIndexes([]int{})
+						//},
 					},
 					PushButton{
 						Text: "删除",
@@ -197,7 +124,7 @@ func PreBooks(owner *walk.MainWindow) (int, error) {
 						Columns: []TableViewColumn{
 							{Title: "编号"},
 							{Title: "名称"},
-							{Title: "次数"},
+							{Title: "手机"},
 							{Title: "备注"},
 						},
 						Model: mw.model,
@@ -215,17 +142,18 @@ func PreBooks(owner *walk.MainWindow) (int, error) {
 	}.Run(owner)
 }
 
-func (mw *MWindow) openPreBook() {
-	preBook := new(models.PreBook)
-	if cmd, err := dialog.AddPreBook(mw, preBook); err != nil {
+func (mw *MWindow) openEmployee() {
+	employee := new(models.Employee)
+	if cmd, err := dialog.AddEmployee(mw, employee); err != nil {
 		log.Print(err)
 	} else if cmd == walk.DlgCmdOK {
 		fmt.Println("DlgCmdOK")
-		preBook.Save()
+		employee.Save()
 		mw.model.items = append(mw.model.items, &Item{
 			Index:   mw.model.Len(),
-			Name:    preBook.Name,
-			Remarks: preBook.Remarks,
+			Name:    employee.Name,
+			Mobile:  employee.Mobile,
+			Remarks: employee.Remarks,
 		})
 		mw.model.PublishRowsReset()
 	}

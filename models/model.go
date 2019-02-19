@@ -7,6 +7,26 @@ import (
 	"time"
 )
 
+func Save(p interface{}) {
+	db := GetConn()
+	defer db.Close()
+	switch a := p.(type) {
+	case PreBook:
+		db.Create(&a)
+		fmt.Println("PreBook", a.Search())
+	case Employee:
+		db.Create(&a)
+		fmt.Println("Employee", a.Search())
+	case Member:
+		db.Create(&a)
+		fmt.Println("Employee", a.Search())
+	default:
+		fmt.Println("unknown type", a)
+
+	}
+
+}
+
 type Item struct {
 	Member
 	Prod
@@ -28,7 +48,7 @@ func (m Member) Search() []Member {
 	db := GetConn()
 	defer db.Close()
 	var product []Member
-	db.First(&product, 1) // find product with id 1
+	db.Find(&product) // find product with id 1
 	fmt.Println("Member search")
 	return product
 
@@ -137,13 +157,29 @@ func (p PreBook) Save() {
 
 type Record struct {
 	gorm.Model
-	Name   string
-	Price  int
-	Prod   []Prod `gorm:"ForeignKey:rePId"`
-	ProdId uint
-	Member Member `gorm:"ForeignKey:recordMId"`
-	MemId  uint
+	Name    string
+	Price   int
+	Prod    []Prod `gorm:"ForeignKey:rePId"`
+	ProdId  uint
+	Member  Member `gorm:"ForeignKey:recordMId"`
+	MemId   uint
+	Remarks string
 }
+
+func (p Record) Search() []Record {
+	db := GetConn()
+	defer db.Close()
+	var product []Record
+	db.Find(&product) // find product with id 1
+	fmt.Println("PreBook search")
+	return product
+}
+func (p Record) Save() {
+	db := GetConn()
+	defer db.Close()
+	db.Create(&p)
+}
+
 type Animal struct {
 	Name          string
 	ArrivalDate   time.Time
