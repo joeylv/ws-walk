@@ -34,27 +34,28 @@ func AddMember(owner walk.Form, member *models.Member) (int, error) {
 				Layout: Grid{Columns: 2},
 				Children: []Widget{
 					Label{
-						Text: "Name:",
+						Text: "姓名:",
 					},
 					LineEdit{
 						Text: Bind("Name"),
 					},
 					Label{
-						Text: "Mobile:",
+						Text: "手机:",
 					},
 					LineEdit{
-						Text: Bind("Mobile"),
+						Text:      Bind("Mobile"),
+						MaxLength: 11,
 					},
 
 					Label{
-						Text: "Code:",
+						Text: "编号:",
 					},
 					LineEdit{
 						Text: Bind("Code"),
 					},
 					Label{
 						ColumnSpan: 2,
-						Text:       "Remarks:",
+						Text:       "备注:",
 					},
 					TextEdit{
 						ColumnSpan: 2,

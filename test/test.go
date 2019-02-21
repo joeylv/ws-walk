@@ -20,12 +20,12 @@ func tysw() {
 	var list interface{}
 	switch a := x.(type) {
 	case models.PreBook:
-		fmt.Println("PreBook", a.Search())
+		fmt.Println("PreBook", a.Search(nil))
 	case models.Employee:
-		fmt.Println("Employee", a.Search())
+		fmt.Println("Employee", a.Search(0))
 	case models.Member:
-		fmt.Println("Employee", a.Search())
-		list = a.Search()
+		fmt.Println("Member", a.Search(0))
+		list = a.Search(0)
 	default:
 		fmt.Println("unknown type", a)
 

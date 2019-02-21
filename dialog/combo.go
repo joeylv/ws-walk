@@ -31,25 +31,25 @@ func AddCombo(owner walk.Form, combo *models.Combo) (int, error) {
 				Layout: Grid{Columns: 2},
 				Children: []Widget{
 					Label{
-						Text: "Name:",
+						Text: "名称:",
 					},
 					LineEdit{
 						Text: Bind("Name", SelRequired{}),
 					},
 					Label{
-						Text: "Code:",
+						Text: "编号:",
 					},
 					LineEdit{
 						Text: Bind("Code"),
 					},
 					Label{
-						Text: "Price:",
+						Text: "价格:",
 					},
 					LineEdit{
 						Text: Bind("Price"),
 					},
 					Label{
-						Text: "Count:",
+						Text: "次数:",
 					},
 					LineEdit{
 						Text: Bind("Count"),

@@ -18,6 +18,8 @@ type MyMainWindow struct {
 	*walk.MainWindow
 }
 
+var model = &models.Model{}
+
 //func init() {
 //	fmt.Println("Init")
 //}
@@ -91,7 +93,7 @@ func main() {
 				Text: "&Help",
 				Items: []MenuItem{
 					Action{
-						Text:        "InitDataBase",
+						Text:        "初始化",
 						OnTriggered: mw.InitDataBase,
 					},
 					Action{
@@ -151,6 +153,7 @@ func main() {
 						//	OnTriggered: mw.changeViewAction_Triggered,
 						//},
 					},
+					OnTriggered: mw.newMember,
 				},
 				Separator{},
 				Action{
@@ -170,7 +173,7 @@ func main() {
 		Children: []Widget{
 			Composite{
 				Border:  true,
-				Layout:  HBox{},
+				Layout:  HBox{MarginsZero: true, SpacingZero: true},
 				MinSize: Size{1000, 770},
 				//MaxSize: Size{1000, 770},
 				Children: compos.Prebook(),
@@ -278,64 +281,76 @@ func (mw *MyMainWindow) openCombos() {
 	if cmd, err := manager.Combos(mw.MainWindow); err != nil {
 		log.Print(err)
 	} else if cmd == walk.DlgCmdOK {
-		fmt.Println("OK")
+		//fmt.Println("OK")
 		//outTE.SetText(fmt.Sprintf("%+v", "CMD"))
 	}
 }
 
 func (mw *MyMainWindow) newMember() {
-	//var outTE *walk.TextEdit
-	member := new(models.Member)
+	member := &models.Member{}
 	if cmd, err := dialog.AddMember(mw, member); err != nil {
 		log.Print(err)
 	} else if cmd == walk.DlgCmdOK {
-		fmt.Println("OK", member)
-		member.Save()
+		//fmt.Println("OK", member)
+		//models.Save(member)
+		model.Member = member
+		model.Save("member")
+		//member.Save()
 		//outTE.SetText(fmt.Sprintf("%+v", member))
 	}
 }
 
 func (mw *MyMainWindow) newEmployee() {
 	//var outTE *walk.TextEdit
-	emp := new(models.Employee)
+	emp := &models.Employee{}
 	if cmd, err := dialog.AddEmployee(mw, emp); err != nil {
 		log.Print(err)
 	} else if cmd == walk.DlgCmdOK {
-		fmt.Println("OK", emp)
-		emp.Save()
+		//fmt.Println("OK", emp)
+		model.Employee = emp
+		model.Save("Employee")
+		//emp.Save()
 		//outTE.SetText(fmt.Sprintf("%+v", member))
 	}
 }
 func (mw *MyMainWindow) newPreBook() {
 	//var outTE *walk.TextEdit
-	preBook := new(models.PreBook)
+	preBook := &models.PreBook{ArrivalDate: time.Now()}
 	//loc, _ := time.LoadLocation("Local")
-	preBook.ArrivalDate = time.Now()
 	if cmd, err := dialog.AddPreBook(mw, preBook); err != nil {
 		log.Print(err)
 	} else if cmd == walk.DlgCmdOK {
-		fmt.Println("OK")
+		//fmt.Println("OK")
+		model.PreBook = preBook
+		model.Save("PreBook")
+		//preBook.Save()
 		//outTE.SetText(fmt.Sprintf("%+v", member))
 	}
 }
 func (mw *MyMainWindow) newProd() {
 	//var outTE *walk.TextEdit
-	prod := new(models.Prod)
+	prod := &models.Prod{}
 	//loc, _ := time.LoadLocation("Local")
 	if cmd, err := dialog.AddProduct(mw, prod); err != nil {
 		log.Print(err)
 	} else if cmd == walk.DlgCmdOK {
-		fmt.Println("OK")
+		//fmt.Println("OK")
+		model.Prod = prod
+		model.Save("Prod")
+		//prod.Save()
 		//outTE.SetText(fmt.Sprintf("%+v", member))
 	}
 }
 
 func (mw *MyMainWindow) newCombo() {
-	combo := new(models.Combo)
+	combo := &models.Combo{}
 	if cmd, err := dialog.AddCombo(mw, combo); err != nil {
 		log.Print(err)
 	} else if cmd == walk.DlgCmdOK {
-		fmt.Println("OK")
+		//fmt.Println("OK")
+		model.Combo = combo
+		model.Save("Combo")
+		//combo.Save()
 	}
 }
 

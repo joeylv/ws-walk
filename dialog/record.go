@@ -34,27 +34,27 @@ func AddRecord(owner walk.Form, member *models.Record) (int, error) {
 				Layout: Grid{Columns: 2},
 				Children: []Widget{
 					Label{
-						Text: "Name:",
+						Text: "名称:",
 					},
 					LineEdit{
 						Text: Bind("Name"),
 					},
 					Label{
-						Text: "Mobile:",
+						Text: "手机:",
 					},
 					LineEdit{
 						Text: Bind("Mobile"),
 					},
 
 					Label{
-						Text: "Code:",
+						Text: "编码:",
 					},
 					LineEdit{
 						Text: Bind("Code"),
 					},
 					Label{
 						ColumnSpan: 2,
-						Text:       "Remarks:",
+						Text:       "备注:",
 					},
 					TextEdit{
 						ColumnSpan: 2,

@@ -2,7 +2,6 @@ package dialog
 
 import (
 	"../models"
-	"fmt"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
 	"log"
@@ -14,6 +13,15 @@ type Species struct {
 	Time string
 }
 
+func Employees() []*Species {
+	employees := models.Employee{}.Search(0)
+	//fmt.Println(employees)
+	list := make([]*Species, 0)
+	for _, j := range employees {
+		list = append(list, &Species{Id: j.ID, Name: j.Name})
+	}
+	return list
+}
 func ProdList() []*Species {
 	prodList := models.Prod{}.Search()
 	list := make([]*Species, 0)
@@ -23,8 +31,8 @@ func ProdList() []*Species {
 	return list
 }
 func PreBookList() []*Species {
-	memList := models.PreBook{}.Search()
-	fmt.Println(memList)
+	memList := models.PreBook{}.Search(nil)
+	//fmt.Println(memList)
 	list := make([]*Species, 0)
 	for _, j := range memList {
 		list = append(list, &Species{Id: j.ID, Name: j.Name})
@@ -33,8 +41,8 @@ func PreBookList() []*Species {
 }
 
 func MemberList() []*Species {
-	memList := models.Member{}.Search()
-	fmt.Println(memList)
+	memList := models.Member{}.Search(0)
+	//fmt.Println(memList)
 	list := make([]*Species, 0)
 	for _, j := range memList {
 		list = append(list, &Species{Id: j.ID, Name: j.Name})

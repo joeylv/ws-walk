@@ -31,21 +31,22 @@ func AddPreBook(owner walk.Form, preBook *models.PreBook) (int, error) {
 				Layout: Grid{Columns: 2},
 				Children: []Widget{
 					Label{
-						Text: "Name:",
+						Text: "姓名:",
 					},
 					LineEdit{
 						Text: Bind("Name", SelRequired{}),
 					},
 					Label{
-						Text: "Mobile:",
+						Text: "手机:",
 					},
 					LineEdit{
-						Text: Bind("Mobile"),
+						Text:      Bind("Mobile"),
+						MaxLength: 11,
 					},
 
 					Label{
 						ColumnSpan: 2,
-						Text:       "Remarks:",
+						Text:       "备注:",
 					},
 					TextEdit{
 						ColumnSpan: 2,
@@ -53,22 +54,38 @@ func AddPreBook(owner walk.Form, preBook *models.PreBook) (int, error) {
 						Text:       Bind("Remarks"),
 					},
 					Label{
-						Text: "Prod:",
+						Text: "会员:",
 					},
 					ComboBox{
-						Value:         Bind("Prod", SelRequired{}),
+						Value:         Bind("MemId"),
+						BindingMember: "Id",
+						DisplayMember: "Name",
+						Model:         MemberList(),
+					},
+					Label{
+						Text: "项目:",
+					},
+					ComboBox{
+						Value:         Bind("ProdId"),
 						BindingMember: "Id",
 						DisplayMember: "Name",
 						Model:         ProdList(),
 					},
 					Label{
-						Text: "ArrivalDate:",
+						Text: "员工:",
+					},
+					ComboBox{
+						Value:         Bind("EmpId"),
+						BindingMember: "Id",
+						DisplayMember: "Name",
+						Model:         Employees(),
+					},
+					Label{
+						Text: "预约时间:",
 					},
 					DateEdit{
-						Date: Bind("ArrivalDate"),
-
+						Date:   Bind("ArrivalDate"),
 						Format: "yyyy-MM-dd HH:ss",
-
 						//MaxDate :time.Now().AddDate(0,0,14),
 						//MinDate:time.Now(),
 					},
@@ -86,7 +103,6 @@ func AddPreBook(owner walk.Form, preBook *models.PreBook) (int, error) {
 								log.Print(err)
 								return
 							}
-
 							dlg.Accept()
 						},
 					},

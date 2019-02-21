@@ -32,19 +32,20 @@ func AddProduct(owner walk.Form, prod *models.Prod) (int, error) {
 				Layout: Grid{Columns: 2},
 				Children: []Widget{
 					Label{
-						Text: "Name:",
+						Text: "名称:",
 					},
 					LineEdit{
 						Text: Bind("Name"),
 					},
 					Label{
-						Text: "Price:",
+						Text: "价格:",
 					},
 					NumberEdit{
-						Value: Bind("Price"),
+						Decimals: 1,
+						Value:    Bind("Price"),
 					},
 					Label{
-						Text: "Remarks:",
+						Text: "备注:",
 					},
 					TextEdit{
 						ColumnSpan: 2,

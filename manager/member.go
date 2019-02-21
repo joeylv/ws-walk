@@ -10,15 +10,11 @@ import (
 )
 
 func MemberModel() *ItemModel {
-	memList := models.Member{}.Search()
-
-	m := new(ItemModel)
-	m.items = make([]*Item, len(memList))
+	memList := models.Member{}.Search(0)
+	m := &ItemModel{table: "member", Items: make([]*Item, len(memList))}
+	//m.items = make([]*Item, len(memList))
 	for i, j := range memList {
-		fmt.Println(i)
-		fmt.Println(j.Name)
-		//m.items
-		m.items[i] = &Item{
+		m.Items[i] = &Item{
 			Index:   i,
 			Name:    j.Name,
 			Mobile:  j.Mobile,
@@ -67,7 +63,7 @@ func Member(owner *walk.MainWindow) (int, error) {
 						OnClicked: func() {
 							var items []*Item
 							remove := mw.tv.SelectedIndexes()
-							for i, x := range mw.model.items {
+							for i, x := range mw.model.Items {
 								removeOk := false
 								for _, j := range remove {
 									if i == j {
@@ -78,7 +74,7 @@ func Member(owner *walk.MainWindow) (int, error) {
 									items = append(items, x)
 								}
 							}
-							mw.model.items = items
+							mw.model.Items = items
 							mw.model.PublishRowsReset()
 							mw.tv.SetSelectedIndexes([]int{})
 						},
@@ -86,7 +82,7 @@ func Member(owner *walk.MainWindow) (int, error) {
 					PushButton{
 						Text: "ExecChecked",
 						OnClicked: func() {
-							for _, x := range mw.model.items {
+							for _, x := range mw.model.Items {
 								if x.checked {
 									fmt.Printf("checked: %v\n", x)
 								}
@@ -97,7 +93,7 @@ func Member(owner *walk.MainWindow) (int, error) {
 					PushButton{
 						Text: "AddPriceChecked",
 						OnClicked: func() {
-							for i, x := range mw.model.items {
+							for i, x := range mw.model.Items {
 								if x.checked {
 									//x.Price++
 									mw.model.PublishRowChanged(i)
@@ -121,7 +117,7 @@ func Member(owner *walk.MainWindow) (int, error) {
 						},
 					},
 				},
-				Children: mw.tableColumn(),
+				Children: mw.tableColumn("编号", "名称", "手机", "备注"),
 			},
 		},
 	}.Run(owner)
@@ -130,7 +126,7 @@ func Member(owner *walk.MainWindow) (int, error) {
 func (mw *MWindow) tvItemactivated() {
 	msg := ``
 	for _, i := range mw.tv.SelectedIndexes() {
-		msg = msg + "\n" + mw.model.items[i].Name
+		msg = msg + "\n" + mw.model.Items[i].Name
 	}
 	walk.MsgBox(mw, "title", msg, walk.MsgBoxIconInformation)
 }
@@ -144,7 +140,7 @@ func (mw *MWindow) openMember() {
 	} else if cmd == walk.DlgCmdOK {
 		fmt.Println("DlgCmdOK")
 		member.Save()
-		mw.model.items = append(mw.model.items, &Item{
+		mw.model.Items = append(mw.model.Items, &Item{
 			Index:   mw.model.Len(),
 			Name:    member.Name,
 			Mobile:  member.Mobile,
@@ -155,24 +151,26 @@ func (mw *MWindow) openMember() {
 	}
 }
 
-func (mw MWindow) tableColumn() []Widget {
+func (mw MWindow) tableColumn(column ...string) []Widget {
+	var tableViewColumn []TableViewColumn
+	for _, title := range column {
+		//fmt.Println(s)
+		//fmt.Println(j)
+		tableViewColumn = append(tableViewColumn, TableViewColumn{Title: title})
+	}
+	//fmt.Println(tableViewColumn)
 	return []Widget{
 		TableView{
 			AssignTo:         &mw.tv,
 			CheckBoxes:       true,
 			ColumnsOrderable: true,
 			MultiSelection:   true,
-			Columns: []TableViewColumn{
-				{Title: "编号"},
-				{Title: "名称"},
-				{Title: "手机"},
-				{Title: "备注"},
-			},
-			Model: mw.model,
+			Columns:          tableViewColumn,
+			Model:            mw.model,
 			OnCurrentIndexChanged: func() {
 				i := mw.tv.CurrentIndex()
 				if 0 <= i {
-					fmt.Printf("OnCurrentIndexChanged: %v\n", mw.model.items[i].Name)
+					fmt.Printf("OnCurrentIndexChanged: %v\n", mw.model.Items[i].Name)
 				}
 			},
 			OnItemActivated: mw.tvItemactivated,

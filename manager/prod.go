@@ -11,10 +11,10 @@ import (
 
 func ProductModel() *ItemModel {
 	memList := models.Prod{}.Search()
-	m := new(ItemModel)
-	m.items = make([]*Item, len(memList))
+	m := &ItemModel{table: "prod", Items: make([]*Item, len(memList))}
+	//m.items = make([]*Item, len(memList))
 	for i, j := range memList {
-		m.items[i] = &Item{
+		m.Items[i] = &Item{
 			Index:   i,
 			Name:    j.Name,
 			Price:   j.Price,
@@ -54,7 +54,7 @@ func Products(owner *walk.MainWindow) (int, error) {
 						OnClicked: func() {
 							var items []*Item
 							remove := mw.tv.SelectedIndexes()
-							for i, x := range mw.model.items {
+							for i, x := range mw.model.Items {
 								removeOk := false
 								for _, j := range remove {
 									if i == j {
@@ -65,7 +65,7 @@ func Products(owner *walk.MainWindow) (int, error) {
 									items = append(items, x)
 								}
 							}
-							mw.model.items = items
+							mw.model.Items = items
 							mw.model.PublishRowsReset()
 							mw.tv.SetSelectedIndexes([]int{})
 						},
@@ -86,28 +86,29 @@ func Products(owner *walk.MainWindow) (int, error) {
 						},
 					},
 				},
-				Children: []Widget{
-					TableView{
-						AssignTo:         &mw.tv,
-						CheckBoxes:       true,
-						ColumnsOrderable: true,
-						MultiSelection:   true,
-						Columns: []TableViewColumn{
-							{Title: "编号"},
-							{Title: "名称"},
-							{Title: "手机"},
-							{Title: "备注"},
-						},
-						Model: mw.model,
-						OnCurrentIndexChanged: func() {
-							i := mw.tv.CurrentIndex()
-							if 0 <= i {
-								fmt.Printf("OnCurrentIndexChanged: %v\n", mw.model.items[i].Name)
-							}
-						},
-						OnItemActivated: mw.tvItemactivated,
-					},
-				},
+				Children: mw.tableColumn("编号", "名称", "价格", "备注"),
+				//[]Widget{
+				//	TableView{
+				//		AssignTo:         &mw.tv,
+				//		CheckBoxes:       true,
+				//		ColumnsOrderable: true,
+				//		MultiSelection:   true,
+				//		Columns: []TableViewColumn{
+				//			{Title: "编号"},
+				//			{Title: "名称"},
+				//			{Title: "手机"},
+				//			{Title: "备注"},
+				//		},
+				//		Model: mw.model,
+				//		OnCurrentIndexChanged: func() {
+				//			i := mw.tv.CurrentIndex()
+				//			if 0 <= i {
+				//				fmt.Printf("OnCurrentIndexChanged: %v\n", mw.model.items[i].Name)
+				//			}
+				//		},
+				//		OnItemActivated: mw.tvItemactivated,
+				//	},
+				//},
 			},
 		},
 	}.Run(owner)
@@ -120,7 +121,7 @@ func (mw *MWindow) openProduct() {
 	} else if cmd == walk.DlgCmdOK {
 		fmt.Println("DlgCmdOK")
 		prod.Save()
-		mw.model.items = append(mw.model.items, &Item{
+		mw.model.Items = append(mw.model.Items, &Item{
 			Index:   mw.model.Len(),
 			Name:    prod.Name,
 			Price:   prod.Price,
