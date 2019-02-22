@@ -1,9 +1,7 @@
 package manager
 
 import (
-	"../dialog"
 	"../models"
-	"fmt"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
 	"log"
@@ -31,7 +29,7 @@ func ProductModel() *ItemModel {
 //}
 
 func Products(owner *walk.MainWindow) (int, error) {
-	mw := &MWindow{MainWindow: owner, model: ProductModel()}
+	mw := &MyMainWindow{MainWindow: owner, model: ProductModel()}
 	var dlg *walk.Dialog
 	//var db *walk.DataBinder
 	//var acceptPB, cancelPB *walk.PushButton
@@ -47,7 +45,7 @@ func Products(owner *walk.MainWindow) (int, error) {
 					HSpacer{},
 					PushButton{
 						Text:      "添加",
-						OnClicked: mw.openProduct,
+						OnClicked: mw.NewEmployee,
 					},
 					PushButton{
 						Text: "删除",
@@ -114,19 +112,75 @@ func Products(owner *walk.MainWindow) (int, error) {
 	}.Run(owner)
 }
 
-func (mw *MWindow) openProduct() {
-	prod := new(models.Prod)
-	if cmd, err := dialog.AddProduct(mw, prod); err != nil {
-		log.Print(err)
-	} else if cmd == walk.DlgCmdOK {
-		fmt.Println("DlgCmdOK")
-		prod.Save()
-		mw.model.Items = append(mw.model.Items, &Item{
-			Index:   mw.model.Len(),
-			Name:    prod.Name,
-			Price:   prod.Price,
-			Remarks: prod.Remarks,
-		})
-		mw.model.PublishRowsReset()
-	}
+func AddProduct(owner walk.Form, prod *models.Prod) (int, error) {
+	var dlg *walk.Dialog
+	var db *walk.DataBinder
+	var acceptPB, cancelPB *walk.PushButton
+
+	return Dialog{
+		AssignTo:      &dlg,
+		Title:         "项目",
+		FixedSize:     true,
+		DefaultButton: &acceptPB,
+		CancelButton:  &cancelPB,
+		DataBinder: DataBinder{
+			AssignTo:       &db,
+			AutoSubmit:     true,
+			Name:           "Prod",
+			DataSource:     prod,
+			ErrorPresenter: ToolTipErrorPresenter{},
+		},
+		MinSize: Size{600, 300},
+		Layout:  VBox{},
+		Children: []Widget{
+			Composite{
+				Layout: Grid{Columns: 2},
+				Children: []Widget{
+					Label{
+						Text: "名称:",
+					},
+					LineEdit{
+						Text: Bind("Name"),
+					},
+					Label{
+						Text: "价格:",
+					},
+					NumberEdit{
+						Decimals: 1,
+						Value:    Bind("Price"),
+					},
+					Label{
+						Text: "备注:",
+					},
+					TextEdit{
+						ColumnSpan: 2,
+						MinSize:    Size{100, 50},
+						Text:       Bind("Remarks"),
+					},
+				},
+			},
+			Composite{
+				Layout: HBox{},
+				Children: []Widget{
+					HSpacer{},
+					PushButton{
+						AssignTo: &acceptPB,
+						Text:     "OK",
+						OnClicked: func() {
+							if err := db.Submit(); err != nil {
+								log.Print(err)
+								return
+							}
+							dlg.Accept()
+						},
+					},
+					PushButton{
+						AssignTo:  &cancelPB,
+						Text:      "Cancel",
+						OnClicked: func() { dlg.Cancel() },
+					},
+				},
+			},
+		},
+	}.Run(owner)
 }

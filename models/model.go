@@ -26,7 +26,6 @@ func (m Model) Save(d string) {
 		db.Create(&m.Combo)
 	default:
 		fmt.Println("unknown type", m)
-
 	}
 
 }
@@ -37,19 +36,44 @@ func Search(p interface{}, id uint) *Model {
 	model := &Model{}
 	switch a := p.(type) {
 	case PreBook:
-		//fmt.Println("PreBook", a.Search())
-	case Employee:
-		//fmt.Println("Employee", a.Search())
-	case Member:
-		var product []Member
+		var list []PreBook
 		if id == 0 {
-			db.Find(&product)
+			db.Find(&list)
 		} else {
-			db.First(&product, id)
+			db.First(&list, id)
 		}
 		//fmt.Println("Member search")
-		model.Members = product
+		model.PreBooks = list
+		//fmt.Println("PreBook", a.Search())
+	case Employee:
+		var list []Employee
+		if id == 0 {
+			db.Find(&list)
+		} else {
+			db.First(&list, id)
+		}
+		//fmt.Println("Member search")
+		model.Employees = list
 		//fmt.Println("Employee", a.Search())
+	case Member:
+		var list []Member
+		if id == 0 {
+			db.Find(&list)
+		} else {
+			db.First(&list, id)
+		}
+		//fmt.Println("Member search")
+		model.Members = list
+		//fmt.Println("Employee", a.Search())
+	case Combo:
+		var list []Combo
+		if id == 0 {
+			db.Find(&list)
+		} else {
+			db.First(&list, id)
+		}
+		//fmt.Println("Member search")
+		model.Combos = list
 	default:
 		fmt.Println("unknown type", a)
 	}
@@ -62,12 +86,14 @@ type Model struct {
 	*PreBook
 	*Combo
 	*Employee
+	*Record
 
 	Members   []Member
 	Prods     []Prod
 	PreBooks  []PreBook
 	Combos    []Combo
 	Employees []Employee
+	Records   []Record
 }
 
 type Member struct {
@@ -78,26 +104,7 @@ type Member struct {
 	Remarks  string
 	Discount float32
 	PreBooks []PreBook
-}
-
-func (m Member) Search(id uint) []Member {
-	db := GetConn()
-	defer db.Close()
-	var product []Member
-	if id == 0 {
-		db.Find(&product)
-	} else {
-		db.First(&product, id)
-	}
-	//fmt.Println("Member search")
-	return product
-
-}
-func (m Member) Save() {
-	db := GetConn()
-	defer db.Close()
-	//fmt.Println(m)
-	db.Create(&m)
+	Records  []Record
 }
 
 type Employee struct {
@@ -108,44 +115,12 @@ type Employee struct {
 	Remarks string
 }
 
-func (m Employee) Search(id uint) []Employee {
-	db := GetConn()
-	defer db.Close()
-	var product []Employee
-	if id == 0 {
-		db.Find(&product)
-	} else {
-		db.First(&product, id)
-	}
-	//fmt.Println("Employee search")
-	return product
-}
-func (e Employee) Save() {
-	db := GetConn()
-	defer db.Close()
-	db.Create(&e)
-}
-
 type Prod struct {
 	gorm.Model
 	Code    string
 	Name    string
 	Price   float32
 	Remarks string
-}
-
-func (p Prod) Search() []Prod {
-	db := GetConn()
-	defer db.Close()
-	var product []Prod
-	db.Find(&product) // find product with id 1
-	//fmt.Println("Prod search")
-	return product
-}
-func (p Prod) Save() {
-	db := GetConn()
-	defer db.Close()
-	db.Create(&p)
 }
 
 type Combo struct {
@@ -155,20 +130,6 @@ type Combo struct {
 	Name   string
 	Price  float32
 	Count  int
-}
-
-func (c Combo) Search() []Combo {
-	db := GetConn()
-	defer db.Close()
-	var product []Combo
-	db.Find(&product) // find product with id 1
-	//fmt.Println("Combo search")
-	return product
-}
-func (c Combo) Save() {
-	db := GetConn()
-	defer db.Close()
-	db.Create(&c)
 }
 
 type PreBook struct {
@@ -185,53 +146,17 @@ type PreBook struct {
 	Remarks     string
 }
 
-func (p PreBook) Search(time ...*time.Time) []PreBook {
-	db := GetConn()
-	defer db.Close()
-	var product []PreBook
-	if len(time) == 1 {
-		//fmt.Println(time[0])
-		db.Where("arrival_date < ?", time).Find(&product)
-	} else if len(time) == 2 {
-		//fmt.Println(time[0])
-		//fmt.Println(time[1])
-		db.Where("arrival_date BETWEEN ? AND ?", time[0], time[1]).Find(&product)
-	} else {
-		db.Find(&product) // find All
-	}
-
-	//fmt.Println("PreBook search")
-	return product
-}
-func (p PreBook) Save() {
-	db := GetConn()
-	defer db.Close()
-	db.Create(&p)
-}
-
 type Record struct {
 	gorm.Model
-	Name    string
-	Price   float32
-	Prod    []Prod `gorm:"ForeignKey:rePId"`
-	ProdId  uint
-	Member  Member `gorm:"ForeignKey:recordMId"`
+	//Name  string
+	//Price float32
+	//Prod    []Prod `gorm:"ForeignKey:rePId"`
+	ProdId uint
+	//Member  Member `gorm:"ForeignKey:recordMId"`
 	MemId   uint
+	EmpId   uint
+	Combo   uint
 	Remarks string
-}
-
-func (p Record) Search() []Record {
-	db := GetConn()
-	defer db.Close()
-	var product []Record
-	db.Find(&product) // find product with id 1
-	//fmt.Println("PreBook search")
-	return product
-}
-func (p Record) Save() {
-	db := GetConn()
-	defer db.Close()
-	db.Create(&p)
 }
 
 type Animal struct {
@@ -285,4 +210,109 @@ func Migrate() {
 	//db.AutoMigrate(&Combo{}, &PreBook{})
 	db.AutoMigrate(&Prod{}, &Record{}, &PreBook{})
 	db.Model(&Member{}).Related(&PreBook{})
+}
+
+func (m Member) Search(id uint) []Member {
+	db := GetConn()
+	defer db.Close()
+	var product []Member
+	if id == 0 {
+		db.Find(&product)
+	} else {
+		db.First(&product, id)
+	}
+	//fmt.Println("Member search")
+	return product
+
+}
+func (m Member) Save() {
+	db := GetConn()
+	defer db.Close()
+	//fmt.Println(m)
+	db.Create(&m)
+}
+
+func (m Employee) Search(id uint) []Employee {
+	db := GetConn()
+	defer db.Close()
+	var product []Employee
+	if id == 0 {
+		db.Find(&product)
+	} else {
+		db.First(&product, id)
+	}
+	//fmt.Println("Employee search")
+	return product
+}
+func (e Employee) Save() {
+	db := GetConn()
+	defer db.Close()
+	db.Create(&e)
+}
+
+func (p Prod) Search() []Prod {
+	db := GetConn()
+	defer db.Close()
+	var product []Prod
+	db.Find(&product) // find product with id 1
+	//fmt.Println("Prod search")
+	return product
+}
+func (p Prod) Save() {
+	db := GetConn()
+	defer db.Close()
+	db.Create(&p)
+}
+
+func (c Combo) Search() []Combo {
+	db := GetConn()
+	defer db.Close()
+	var product []Combo
+	db.Find(&product) // find product with id 1
+	//fmt.Println("Combo search")
+	return product
+}
+func (c Combo) Save() {
+	db := GetConn()
+	defer db.Close()
+	db.Create(&c)
+}
+
+func (p PreBook) Search(time ...*time.Time) []PreBook {
+	db := GetConn()
+	defer db.Close()
+	var product []PreBook
+	if len(time) == 1 {
+		//fmt.Println(time[0])
+		db.Where("arrival_date < ?", time).Find(&product)
+	} else if len(time) == 2 {
+		//fmt.Println(time[0])
+		//fmt.Println(time[1])
+		db.Where("arrival_date BETWEEN ? AND ?", time[0], time[1]).Find(&product)
+	} else {
+		db.Find(&product) // find All
+	}
+
+	//fmt.Println("PreBook search")
+	return product
+}
+
+func (p Record) Search() []Record {
+	db := GetConn()
+	defer db.Close()
+	var product []Record
+	db.Find(&product) // find product with id 1
+	//fmt.Println("PreBook search")
+	return product
+}
+func (p Record) Save() {
+	db := GetConn()
+	defer db.Close()
+	db.Create(&p)
+}
+
+func (p PreBook) Save() {
+	db := GetConn()
+	defer db.Close()
+	db.Create(&p)
 }

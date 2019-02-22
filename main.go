@@ -2,10 +2,7 @@ package main
 
 import (
 	"./compos"
-	"./dialog"
-	"./manager"
-	"./models"
-	"fmt"
+	. "./manager"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
 	"log"
@@ -14,20 +11,31 @@ import (
 
 var isSpecialMode = walk.NewMutableCondition()
 
-type MyMainWindow struct {
-	*walk.MainWindow
-}
-
-var model = &models.Model{}
-
 //func init() {
 //	fmt.Println("Init")
 //}
 
 func main() {
-	MustRegisterCondition("isSpecialMode", isSpecialMode)
+	//mw := &MyMainWindow{}
+	//MustRegisterCondition("isSpecialMode", isSpecialMode)
+	//now := time.Now()
+	//today := time.Date(now.Year(), now.Month(), now.Day()+1, 00, 00, 00, 00, time.UTC)
+	//tom := time.Date(now.Year(), now.Month(), now.Day()+2, 00, 00, 00, 00, time.UTC)
+	//preToday := mw.GetModel("PreBook", &today)
+	//preTom := mw.GetModel("PreBook", &today, &tom)
+	//&preSet{&walk.TableView{}, preToday, "今日预约", len(preToday.Items)}
+	//TomPre := &PreSet{&walk.TableView{}, preTom, "明日预约", len(preTom.Items)}
+	//mw.TodayPre = &PreSet{&walk.TableView{}, preToday, "今日预约", len(preToday.Items)}
+	//mw.TomPre = TomPre
 
-	mw := new(MyMainWindow)
+	MustRegisterCondition("isSpecialMode", isSpecialMode)
+	now := time.Now()
+	today := time.Date(now.Year(), now.Month(), now.Day()+1, 00, 00, 00, 00, time.UTC)
+	tom := time.Date(now.Year(), now.Month(), now.Day()+2, 00, 00, 00, 00, time.UTC)
+	preToday := PreBookModel(&today)
+	preTom := PreBookModel(&today, &tom)
+	//&preSet{&walk.TableView{}, preToday, "今日预约", len(preToday.Items)}
+	mw := &MyMainWindow{TodayPre: &PreSet{&walk.TableView{}, preToday, "今日预约", len(preToday.Items)}, TomPre: &PreSet{&walk.TableView{}, preTom, "明日预约", len(preTom.Items)}}
 
 	var openAction, showAboutBoxAction *walk.Action
 	var recentMenu *walk.Menu
@@ -48,7 +56,7 @@ func main() {
 						Enabled:     Bind("enabledCB.Checked"),
 						Visible:     Bind("!openHiddenCB.Checked"),
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyO},
-						OnTriggered: mw.openAction_Triggered,
+						OnTriggered: mw.OpenAction_Triggered,
 					},
 					//Action{
 					//	Text:        "Dialog",
@@ -60,23 +68,27 @@ func main() {
 					//},
 					Action{
 						Text:        "会员",
-						OnTriggered: mw.openManager,
+						OnTriggered: mw.OpenMembers,
 					},
 					Action{
 						Text:        "预约",
-						OnTriggered: mw.openReserve,
+						OnTriggered: mw.OpenPreBooks,
 					},
 					Action{
 						Text:        "项目",
-						OnTriggered: mw.openProducts,
+						OnTriggered: mw.OpenProducts,
 					},
 					Action{
 						Text:        "疗程",
-						OnTriggered: mw.openProducts,
+						OnTriggered: mw.OpenCombos,
 					},
 					Action{
 						Text:        "员工",
-						OnTriggered: mw.openEmployees,
+						OnTriggered: mw.OpenEmployees,
+					},
+					Action{
+						Text:        "消费",
+						OnTriggered: mw.OpenRecords,
 					},
 					Menu{
 						AssignTo: &recentMenu,
@@ -99,7 +111,7 @@ func main() {
 					Action{
 						AssignTo:    &showAboutBoxAction,
 						Text:        "About",
-						OnTriggered: mw.showAboutBoxAction_Triggered,
+						OnTriggered: mw.ShowAboutBoxAction_Triggered,
 					},
 				},
 			},
@@ -114,18 +126,18 @@ func main() {
 					Items: []MenuItem{
 						Action{
 							Text:        "预约",
-							OnTriggered: mw.newPreBook,
+							OnTriggered: mw.NewPreBook,
 						},
 						Action{
 							Text:        "项目",
-							OnTriggered: mw.newProd,
+							OnTriggered: mw.NewProd,
 						},
 						Action{
 							Text:        "疗程",
-							OnTriggered: mw.newProd,
+							OnTriggered: mw.NewProd,
 						},
 					},
-					OnTriggered: mw.newPreBook,
+					OnTriggered: mw.NewPreBook,
 				},
 				Separator{},
 				Menu{
@@ -134,11 +146,15 @@ func main() {
 					Items: []MenuItem{
 						Action{
 							Text:        "会员",
-							OnTriggered: mw.newMember,
+							OnTriggered: mw.NewMember,
 						},
 						Action{
 							Text:        "员工",
-							OnTriggered: mw.newEmployee,
+							OnTriggered: mw.NewEmployee,
+						},
+						Action{
+							Text:        "消费",
+							OnTriggered: mw.NewRecord,
 						},
 						//Action{
 						//	Text:        "X",
@@ -153,14 +169,14 @@ func main() {
 						//	OnTriggered: mw.changeViewAction_Triggered,
 						//},
 					},
-					OnTriggered: mw.newMember,
+					OnTriggered: mw.NewMember,
 				},
 				Separator{},
 				Action{
 					Text:        "Special",
 					Image:       "/img/system-shutdown.png",
 					Enabled:     Bind("isSpecialMode && enabledCB.Checked"),
-					OnTriggered: mw.specialAction_Triggered,
+					OnTriggered: mw.SpecialAction_Triggered,
 				},
 			},
 		},
@@ -176,7 +192,7 @@ func main() {
 				Layout:  HBox{MarginsZero: true, SpacingZero: true},
 				MinSize: Size{1000, 770},
 				//MaxSize: Size{1000, 770},
-				Children: compos.Prebook(),
+				Children: compos.Prebook(mw.TodayPre, mw.TomPre),
 			},
 			Composite{
 				Layout:  Flow{SpacingZero: true},
@@ -231,7 +247,7 @@ func main() {
 		for _, text := range texts {
 			a := walk.NewAction()
 			a.SetText(text)
-			a.Triggered().Attach(mw.openAction_Triggered)
+			a.Triggered().Attach(mw.OpenAction_Triggered)
 			recentMenu.Actions().Add(a)
 		}
 	}
@@ -240,151 +256,4 @@ func main() {
 
 	mw.Run()
 
-}
-
-func (mw *MyMainWindow) openManager() {
-	var outTE *walk.TextEdit
-	if cmd, err := manager.Member(mw.MainWindow); err != nil {
-		log.Print(err)
-	} else if cmd == walk.DlgCmdOK {
-		outTE.SetText(fmt.Sprintf("%+v", "CMD"))
-	}
-}
-func (mw *MyMainWindow) openEmployees() {
-	var outTE *walk.TextEdit
-	if cmd, err := manager.Employees(mw.MainWindow); err != nil {
-		log.Print(err)
-	} else if cmd == walk.DlgCmdOK {
-		outTE.SetText(fmt.Sprintf("%+v", "CMD"))
-	}
-}
-func (mw *MyMainWindow) openReserve() {
-	var outTE *walk.TextEdit
-	if cmd, err := manager.PreBooks(mw.MainWindow); err != nil {
-		log.Print(err)
-	} else if cmd == walk.DlgCmdOK {
-		outTE.SetText(fmt.Sprintf("%+v", "CMD"))
-	}
-}
-
-func (mw *MyMainWindow) openProducts() {
-	var outTE *walk.TextEdit
-	if cmd, err := manager.Products(mw.MainWindow); err != nil {
-		log.Print(err)
-	} else if cmd == walk.DlgCmdOK {
-		outTE.SetText(fmt.Sprintf("%+v", "CMD"))
-	}
-}
-
-func (mw *MyMainWindow) openCombos() {
-	//var outTE *walk.TextEdit
-	if cmd, err := manager.Combos(mw.MainWindow); err != nil {
-		log.Print(err)
-	} else if cmd == walk.DlgCmdOK {
-		//fmt.Println("OK")
-		//outTE.SetText(fmt.Sprintf("%+v", "CMD"))
-	}
-}
-
-func (mw *MyMainWindow) newMember() {
-	member := &models.Member{}
-	if cmd, err := dialog.AddMember(mw, member); err != nil {
-		log.Print(err)
-	} else if cmd == walk.DlgCmdOK {
-		//fmt.Println("OK", member)
-		//models.Save(member)
-		model.Member = member
-		model.Save("member")
-		//member.Save()
-		//outTE.SetText(fmt.Sprintf("%+v", member))
-	}
-}
-
-func (mw *MyMainWindow) newEmployee() {
-	//var outTE *walk.TextEdit
-	emp := &models.Employee{}
-	if cmd, err := dialog.AddEmployee(mw, emp); err != nil {
-		log.Print(err)
-	} else if cmd == walk.DlgCmdOK {
-		//fmt.Println("OK", emp)
-		model.Employee = emp
-		model.Save("Employee")
-		//emp.Save()
-		//outTE.SetText(fmt.Sprintf("%+v", member))
-	}
-}
-func (mw *MyMainWindow) newPreBook() {
-	//var outTE *walk.TextEdit
-	preBook := &models.PreBook{ArrivalDate: time.Now()}
-	//loc, _ := time.LoadLocation("Local")
-	if cmd, err := dialog.AddPreBook(mw, preBook); err != nil {
-		log.Print(err)
-	} else if cmd == walk.DlgCmdOK {
-		//fmt.Println("OK")
-		model.PreBook = preBook
-		model.Save("PreBook")
-		//preBook.Save()
-		//outTE.SetText(fmt.Sprintf("%+v", member))
-	}
-}
-func (mw *MyMainWindow) newProd() {
-	//var outTE *walk.TextEdit
-	prod := &models.Prod{}
-	//loc, _ := time.LoadLocation("Local")
-	if cmd, err := dialog.AddProduct(mw, prod); err != nil {
-		log.Print(err)
-	} else if cmd == walk.DlgCmdOK {
-		//fmt.Println("OK")
-		model.Prod = prod
-		model.Save("Prod")
-		//prod.Save()
-		//outTE.SetText(fmt.Sprintf("%+v", member))
-	}
-}
-
-func (mw *MyMainWindow) newCombo() {
-	combo := &models.Combo{}
-	if cmd, err := dialog.AddCombo(mw, combo); err != nil {
-		log.Print(err)
-	} else if cmd == walk.DlgCmdOK {
-		//fmt.Println("OK")
-		model.Combo = combo
-		model.Save("Combo")
-		//combo.Save()
-	}
-}
-
-func (mw *MyMainWindow) openDialog() {
-	//var outTE *walk.TextEdit
-	animal := new(models.Animal)
-	if cmd, err := dialog.RunAnimalDialog(mw, animal); err != nil {
-		log.Print(err)
-	} else if cmd == walk.DlgCmdOK {
-		fmt.Println("OK")
-		//outTE.SetText(fmt.Sprintf("%+v", animal))
-	}
-}
-
-func (mw *MyMainWindow) InitDataBase() {
-	models.Migrate()
-	//dbcon.Create()
-}
-func (mw *MyMainWindow) openAction_Triggered() {
-	walk.MsgBox(mw, "Open", "Pretend to open a file...", walk.MsgBoxIconInformation)
-}
-
-func (mw *MyMainWindow) newAction_Triggered() {
-	walk.MsgBox(mw, "New", "Newing something up... or not.", walk.MsgBoxIconInformation)
-}
-
-func (mw *MyMainWindow) changeViewAction_Triggered() {
-	walk.MsgBox(mw, "Change View", "By now you may have guessed it. Nothing changed.", walk.MsgBoxIconInformation)
-}
-
-func (mw *MyMainWindow) showAboutBoxAction_Triggered() {
-	walk.MsgBox(mw, "About", "Walk Actions Example", walk.MsgBoxIconInformation)
-}
-
-func (mw *MyMainWindow) specialAction_Triggered() {
-	walk.MsgBox(mw, "Special", "Nothing to see here.", walk.MsgBoxIconInformation)
 }

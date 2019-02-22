@@ -1,7 +1,6 @@
 package manager
 
 import (
-	"../dialog"
 	"../models"
 	"fmt"
 	"github.com/lxn/walk"
@@ -9,29 +8,9 @@ import (
 	"log"
 )
 
-func MemberModel() *ItemModel {
-	memList := models.Member{}.Search(0)
-	m := &ItemModel{table: "member", Items: make([]*Item, len(memList))}
-	//m.items = make([]*Item, len(memList))
-	for i, j := range memList {
-		m.Items[i] = &Item{
-			Index:   i,
-			Name:    j.Name,
-			Mobile:  j.Mobile,
-			Remarks: j.Remarks,
-		}
-	}
-	return m
-}
-
-type MWindow struct {
-	*walk.MainWindow
-	model *ItemModel
-	tv    *walk.TableView
-}
-
 func Member(owner *walk.MainWindow) (int, error) {
-	mw := &MWindow{MainWindow: owner, model: MemberModel()}
+	mw := &MyMainWindow{MainWindow: owner, model: MemberModel()}
+	//mw.model = mw.GetModel("Member")
 	var dlg *walk.Dialog
 	//var db *walk.DataBinder
 	//var acceptPB, cancelPB *walk.PushButton
@@ -47,7 +26,7 @@ func Member(owner *walk.MainWindow) (int, error) {
 					HSpacer{},
 					PushButton{
 						Text:      "添加",
-						OnClicked: mw.openMember,
+						OnClicked: mw.NewMember,
 						//func() {
 						//	//mw.model.items = append(mw.model.items, &Condom{
 						//	//	Index: mw.model.Len() + 1,
@@ -123,7 +102,7 @@ func Member(owner *walk.MainWindow) (int, error) {
 	}.Run(owner)
 }
 
-func (mw *MWindow) tvItemactivated() {
+func (mw *MyMainWindow) tvItemactivated() {
 	msg := ``
 	for _, i := range mw.tv.SelectedIndexes() {
 		msg = msg + "\n" + mw.model.Items[i].Name
@@ -131,27 +110,87 @@ func (mw *MWindow) tvItemactivated() {
 	walk.MsgBox(mw, "title", msg, walk.MsgBoxIconInformation)
 }
 
-func (mw *MWindow) openMember() {
-	//walk.MsgBox(*mw, "title", "sss", walk.MsgBoxIconInformation)
-	//var outTE *walk.TextEdit
-	member := new(models.Member)
-	if cmd, err := dialog.AddMember(mw, member); err != nil {
-		log.Print(err)
-	} else if cmd == walk.DlgCmdOK {
-		fmt.Println("DlgCmdOK")
-		member.Save()
-		mw.model.Items = append(mw.model.Items, &Item{
-			Index:   mw.model.Len(),
-			Name:    member.Name,
-			Mobile:  member.Mobile,
-			Remarks: member.Remarks,
-		})
-		mw.model.PublishRowsReset()
-		//outTE.SetText(fmt.Sprintf("%+v", member))
-	}
+func AddMember(owner walk.Form, member *models.Member) (int, error) {
+	var dlg *walk.Dialog
+	var db *walk.DataBinder
+	var acceptPB, cancelPB *walk.PushButton
+	return Dialog{
+		AssignTo:      &dlg,
+		Title:         "添加会员",
+		DefaultButton: &acceptPB,
+		CancelButton:  &cancelPB,
+		DataBinder: DataBinder{
+			AssignTo:       &db,
+			AutoSubmit:     true,
+			Name:           "Member",
+			DataSource:     member,
+			ErrorPresenter: ToolTipErrorPresenter{},
+		},
+		MinSize: Size{600, 300},
+		Layout:  VBox{},
+		Children: []Widget{
+			Composite{
+				Layout: Grid{Columns: 2},
+				Children: []Widget{
+					Label{
+						Text: "姓名:",
+					},
+					LineEdit{
+						Text: Bind("Name"),
+					},
+					Label{
+						Text: "手机:",
+					},
+					LineEdit{
+						Text:      Bind("Mobile"),
+						MaxLength: 11,
+					},
+
+					Label{
+						Text: "编号:",
+					},
+					LineEdit{
+						Text: Bind("Code"),
+					},
+					Label{
+						ColumnSpan: 2,
+						Text:       "备注:",
+					},
+					TextEdit{
+						ColumnSpan: 2,
+						MinSize:    Size{100, 50},
+						Text:       Bind("Remarks"),
+					},
+				},
+			},
+			Composite{
+				Layout: HBox{},
+				Children: []Widget{
+					HSpacer{},
+					PushButton{
+						AssignTo: &acceptPB,
+						Text:     "OK",
+						OnClicked: func() {
+							if err := db.Submit(); err != nil {
+								log.Print(err)
+								walk.MsgBox(owner, "错误提示", err.Error(), walk.MsgBoxIconError)
+								return
+							}
+							dlg.Accept()
+						},
+					},
+					PushButton{
+						AssignTo:  &cancelPB,
+						Text:      "Cancel",
+						OnClicked: func() { dlg.Cancel() },
+					},
+				},
+			},
+		},
+	}.Run(owner)
 }
 
-func (mw MWindow) tableColumn(column ...string) []Widget {
+func (mw MyMainWindow) tableColumn(column ...string) []Widget {
 	var tableViewColumn []TableViewColumn
 	for _, title := range column {
 		//fmt.Println(s)

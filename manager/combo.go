@@ -1,7 +1,6 @@
 package manager
 
 import (
-	"../dialog"
 	"../models"
 	"fmt"
 	"github.com/lxn/walk"
@@ -9,28 +8,9 @@ import (
 	"log"
 )
 
-func ComboModel() *ItemModel {
-	memList := models.Combo{}.Search()
-	m := &ItemModel{table: "combo", Items: make([]*Item, len(memList))}
-	//m.items = make([]*Item, len(memList))
-	//fmt.Println(memList)
-	for i, j := range memList {
-		fmt.Println(i)
-		fmt.Println(j.Name)
-		//m.items
-		m.Items[i] = &Item{
-			Index: i,
-			Name:  j.Name,
-			Count: j.Count,
-			Price: j.Price,
-		}
-	}
-
-	return m
-}
-
 func Combos(owner *walk.MainWindow) (int, error) {
-	mw := &MWindow{MainWindow: owner, model: ComboModel()}
+	mw := &MyMainWindow{MainWindow: owner}
+	mw.model = mw.GetModel("Combo")
 	var dlg *walk.Dialog
 	//var db *walk.DataBinder
 	//var acceptPB, cancelPB *walk.PushButton
@@ -46,7 +26,7 @@ func Combos(owner *walk.MainWindow) (int, error) {
 					HSpacer{},
 					PushButton{
 						Text:      "添加",
-						OnClicked: mw.openCombo,
+						OnClicked: mw.NewCombo,
 					},
 					PushButton{
 						Text: "删除",
@@ -135,22 +115,78 @@ func Combos(owner *walk.MainWindow) (int, error) {
 	}.Run(owner)
 }
 
-func (mw *MWindow) openCombo() {
-	//walk.MsgBox(*mw, "title", "sss", walk.MsgBoxIconInformation)
-	//var outTE *walk.TextEdit
-	combo := new(models.Combo)
-	if cmd, err := dialog.AddCombo(mw, combo); err != nil {
-		log.Print(err)
-	} else if cmd == walk.DlgCmdOK {
-		fmt.Println("DlgCmdOK")
-		combo.Save()
-		mw.model.Items = append(mw.model.Items, &Item{
-			Index: mw.model.Len(),
-			Name:  combo.Name,
-			Count: combo.Count,
-			Price: combo.Price,
-		})
-		mw.model.PublishRowsReset()
-		//outTE.SetText(fmt.Sprintf("%+v", member))
-	}
+func AddCombo(owner walk.Form, combo *models.Combo) (int, error) {
+	var dlg *walk.Dialog
+	var db *walk.DataBinder
+	var acceptPB, cancelPB *walk.PushButton
+
+	return Dialog{
+		AssignTo:      &dlg,
+		Title:         "疗程",
+		DefaultButton: &acceptPB,
+		CancelButton:  &cancelPB,
+		DataBinder: DataBinder{
+			AssignTo:       &db,
+			AutoSubmit:     true,
+			Name:           "Combo",
+			DataSource:     combo,
+			ErrorPresenter: ToolTipErrorPresenter{},
+		},
+		MinSize: Size{600, 300},
+		Layout:  VBox{},
+		Children: []Widget{
+			Composite{
+				Layout: Grid{Columns: 2},
+				Children: []Widget{
+					Label{
+						Text: "名称:",
+					},
+					LineEdit{
+						Text: Bind("Name"),
+					},
+					Label{
+						Text: "编号:",
+					},
+					LineEdit{
+						Text: Bind("Code"),
+					},
+					Label{
+						Text: "价格:",
+					},
+					NumberEdit{
+						Value: Bind("Price"),
+					},
+					Label{
+						Text: "次数:",
+					},
+					NumberEdit{
+						Value: Bind("Count"),
+					},
+				},
+			},
+			Composite{
+				Layout: HBox{},
+				Children: []Widget{
+					HSpacer{},
+					PushButton{
+						AssignTo: &acceptPB,
+						Text:     "OK",
+						OnClicked: func() {
+							if err := db.Submit(); err != nil {
+								log.Print(err)
+								return
+							}
+
+							dlg.Accept()
+						},
+					},
+					PushButton{
+						AssignTo:  &cancelPB,
+						Text:      "Cancel",
+						OnClicked: func() { dlg.Cancel() },
+					},
+				},
+			},
+		},
+	}.Run(owner)
 }

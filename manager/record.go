@@ -1,7 +1,6 @@
 package manager
 
 import (
-	"../dialog"
 	"../models"
 	"fmt"
 	"github.com/lxn/walk"
@@ -10,15 +9,15 @@ import (
 )
 
 func RecordModel() *ItemModel {
-	memList := models.Record{}.Search()
-	m := &ItemModel{table: "record", Items: make([]*Item, len(memList))}
+	records := models.Record{}.Search()
+	m := &ItemModel{table: "record", Items: make([]*Item, len(records))}
 	//m := new(ItemModel)
 	//m.items = make([]*Item, len(memList))
-	for i, j := range memList {
+	for i, j := range records {
 		m.Items[i] = &Item{
-			Index:   i,
-			Name:    j.Name,
-			Price:   j.Price,
+			Index: i,
+			//Name:    j.Name,
+			//Price:   j.Price,
 			Remarks: j.Remarks,
 		}
 	}
@@ -26,7 +25,7 @@ func RecordModel() *ItemModel {
 }
 
 func Records(owner *walk.MainWindow) (int, error) {
-	mw := &MWindow{MainWindow: owner, model: RecordModel()}
+	mw := &MyMainWindow{MainWindow: owner, model: RecordModel()}
 	var dlg *walk.Dialog
 	//var db *walk.DataBinder
 	//var acceptPB, cancelPB *walk.PushButton
@@ -42,7 +41,7 @@ func Records(owner *walk.MainWindow) (int, error) {
 					HSpacer{},
 					PushButton{
 						Text:      "添加",
-						OnClicked: mw.openRecord,
+						OnClicked: mw.NewRecord,
 						//func() {
 						//	//mw.model.items = append(mw.model.items, &Condom{
 						//	//	Index: mw.model.Len() + 1,
@@ -139,20 +138,89 @@ func Records(owner *walk.MainWindow) (int, error) {
 		},
 	}.Run(owner)
 }
-
-func (mw *MWindow) openRecord() {
-	record := new(models.Record)
-	if cmd, err := dialog.AddRecord(mw, record); err != nil {
-		log.Print(err)
-	} else if cmd == walk.DlgCmdOK {
-		fmt.Println("DlgCmdOK")
-		record.Save()
-		mw.model.Items = append(mw.model.Items, &Item{
-			Index:   mw.model.Len(),
-			Name:    record.Name,
-			Price:   record.Price,
-			Remarks: record.Remarks,
-		})
-		mw.model.PublishRowsReset()
-	}
+func AddRecord(owner walk.Form, member *models.Record) (int, error) {
+	var dlg *walk.Dialog
+	var db *walk.DataBinder
+	var acceptPB, cancelPB *walk.PushButton
+	return Dialog{
+		AssignTo:      &dlg,
+		Title:         "添加消费记录",
+		DefaultButton: &acceptPB,
+		CancelButton:  &cancelPB,
+		DataBinder: DataBinder{
+			AssignTo:       &db,
+			AutoSubmit:     true,
+			Name:           "Member",
+			DataSource:     member,
+			ErrorPresenter: ToolTipErrorPresenter{},
+		},
+		MinSize: Size{600, 300},
+		Layout:  VBox{},
+		Children: []Widget{
+			Composite{
+				Layout: Grid{Columns: 2},
+				Children: []Widget{
+					Label{
+						Text: "会员:",
+					},
+					ComboBox{
+						Value:         Bind("MemId"),
+						BindingMember: "Id",
+						DisplayMember: "Name",
+						Model:         MemberList(),
+					},
+					Label{
+						Text: "项目:",
+					},
+					ComboBox{
+						Value:         Bind("ProdId"),
+						BindingMember: "Id",
+						DisplayMember: "Name",
+						Model:         ProdList(),
+					},
+					Label{
+						Text: "员工:",
+					},
+					ComboBox{
+						Value:         Bind("EmpId"),
+						BindingMember: "Id",
+						DisplayMember: "Name",
+						Model:         EmployeeList(),
+					},
+					Label{
+						ColumnSpan: 2,
+						Text:       "备注:",
+					},
+					TextEdit{
+						ColumnSpan: 2,
+						MinSize:    Size{100, 50},
+						Text:       Bind("Remarks"),
+					},
+				},
+			},
+			Composite{
+				Layout: HBox{},
+				Children: []Widget{
+					HSpacer{},
+					PushButton{
+						AssignTo: &acceptPB,
+						Text:     "OK",
+						OnClicked: func() {
+							if err := db.Submit(); err != nil {
+								log.Print(err)
+								walk.MsgBox(owner, "错误提示", err.Error(), walk.MsgBoxIconError)
+								return
+							}
+							dlg.Accept()
+						},
+					},
+					PushButton{
+						AssignTo:  &cancelPB,
+						Text:      "Cancel",
+						OnClicked: func() { dlg.Cancel() },
+					},
+				},
+			},
+		},
+	}.Run(owner)
 }

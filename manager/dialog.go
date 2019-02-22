@@ -1,4 +1,4 @@
-package dialog
+package manager
 
 import (
 	"../models"
@@ -13,7 +13,7 @@ type Species struct {
 	Time string
 }
 
-func Employees() []*Species {
+func EmployeeList() []*Species {
 	employees := models.Employee{}.Search(0)
 	//fmt.Println(employees)
 	list := make([]*Species, 0)

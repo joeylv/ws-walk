@@ -1,7 +1,6 @@
 package manager
 
 import (
-	"../dialog"
 	"../models"
 	"fmt"
 	"github.com/lxn/walk"
@@ -9,33 +8,16 @@ import (
 	"log"
 )
 
-func EmployeeModel() *ItemModel {
-	memList := models.Employee{}.Search(0)
-	m := &ItemModel{table: "employee", Items: make([]*Item, len(memList))}
-	//m := new(ItemModel)
-	//m.items = make([]*Item, len(memList))
-	for i, j := range memList {
-		fmt.Println(i)
-		fmt.Println(j.Name)
-		//m.items
-		m.Items[i] = &Item{
-			Index:   i,
-			Name:    j.Name,
-			Mobile:  j.Mobile,
-			Remarks: j.Remarks,
-		}
-	}
-	return m
-}
-
 func Employees(owner *walk.MainWindow) (int, error) {
-	mw := &MWindow{MainWindow: owner, model: EmployeeModel()}
+	mw := &MyMainWindow{MainWindow: owner}
+	mw.model = mw.GetModel("Employee")
+	//
 	var dlg *walk.Dialog
 	//var db *walk.DataBinder
 	//var acceptPB, cancelPB *walk.PushButton
 	return Dialog{
 		AssignTo: &dlg,
-		Title:    "会员管理",
+		Title:    "员工管理",
 		MinSize:  Size{800, 600},
 		Layout:   VBox{},
 		Children: []Widget{
@@ -45,7 +27,7 @@ func Employees(owner *walk.MainWindow) (int, error) {
 					HSpacer{},
 					PushButton{
 						Text:      "添加",
-						OnClicked: mw.openEmployee,
+						OnClicked: mw.NewEmployee,
 						//func() {
 						//	//mw.model.items = append(mw.model.items, &Condom{
 						//	//	Index: mw.model.Len() + 1,
@@ -143,19 +125,104 @@ func Employees(owner *walk.MainWindow) (int, error) {
 	}.Run(owner)
 }
 
-func (mw *MWindow) openEmployee() {
-	employee := new(models.Employee)
-	if cmd, err := dialog.AddEmployee(mw, employee); err != nil {
-		log.Print(err)
-	} else if cmd == walk.DlgCmdOK {
-		fmt.Println("DlgCmdOK")
-		employee.Save()
-		mw.model.Items = append(mw.model.Items, &Item{
-			Index:   mw.model.Len(),
-			Name:    employee.Name,
-			Mobile:  employee.Mobile,
-			Remarks: employee.Remarks,
-		})
-		mw.model.PublishRowsReset()
-	}
+func AddEmployee(owner walk.Form, member *models.Employee) (int, error) {
+	var dlg *walk.Dialog
+	var db *walk.DataBinder
+	var acceptPB, cancelPB *walk.PushButton
+	return Dialog{
+		AssignTo:      &dlg,
+		Title:         "添加员工",
+		DefaultButton: &acceptPB,
+		CancelButton:  &cancelPB,
+		DataBinder: DataBinder{
+			AssignTo:       &db,
+			AutoSubmit:     true,
+			Name:           "Member",
+			DataSource:     member,
+			ErrorPresenter: ToolTipErrorPresenter{},
+		},
+		MinSize: Size{600, 300},
+		Layout:  VBox{},
+		Children: []Widget{
+			Composite{
+				Layout: Grid{Columns: 2},
+				Children: []Widget{
+					Label{
+						Text: "姓名:",
+					},
+					LineEdit{
+						Text: Bind("Name"),
+					},
+					Label{
+						Text: "手机:",
+					},
+					LineEdit{
+						Text:      Bind("Mobile"),
+						MaxLength: 11,
+					},
+
+					Label{
+						Text: "工号:",
+					},
+					LineEdit{
+						Text: Bind("Code"),
+					},
+					Label{
+						ColumnSpan: 2,
+						Text:       "备注:",
+					},
+					TextEdit{
+						ColumnSpan: 2,
+						MinSize:    Size{100, 50},
+						Text:       Bind("Remarks"),
+					},
+				},
+			},
+			Composite{
+				Layout: HBox{},
+				Children: []Widget{
+					HSpacer{},
+					PushButton{
+						AssignTo: &acceptPB,
+						Text:     "OK",
+						OnClicked: func() {
+
+							//if db.Dirty() {
+							//	fmt.Println(db.Dirty())
+							//	fmt.Println(member.Name)
+							//	fmt.Println(db.DataSource())
+
+							if err := db.Submit(); err != nil {
+								log.Print(err)
+								walk.MsgBox(owner, "错误提示", err.Error(), walk.MsgBoxIconError)
+								return
+							}
+							dlg.Accept()
+							//} else {
+							//fmt.Println(db.Dirty())
+							//fmt.Println(member.Name)
+							//fmt.Println(member.Mobile)
+							//fmt.Println(member.Code)
+							//fmt.Println(member.Remarks)
+							//fmt.Println(db.DataSource())
+							//if err := db.Submit(); err != nil {
+							//	log.Print(err)
+							//	walk.MsgBox(owner, "错误提示", err.Error(), walk.MsgBoxIconError)
+							//	return
+							//}
+							//dbcon.Create("member", member.Name, member.Mobile, member.Code, member.Remarks)
+							//	walk.MsgBox(owner, "错误提示", "...", walk.MsgBoxIconError)
+							//}
+
+						},
+					},
+					PushButton{
+						AssignTo:  &cancelPB,
+						Text:      "Cancel",
+						OnClicked: func() { dlg.Cancel() },
+					},
+				},
+			},
+		},
+	}.Run(owner)
 }

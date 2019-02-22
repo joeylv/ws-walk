@@ -1,179 +1,15 @@
 package manager
 
 import (
-	"../dialog"
 	"../models"
 	"fmt"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
 	"log"
-	"sort"
-	"strconv"
-	"time"
 )
 
-type Item struct {
-	Index       int
-	Name        string
-	Mobile      string
-	Price       float32
-	Count       int
-	Remarks     string
-	ArrivalDate time.Time
-	checked     bool
-}
-
-type ItemModel struct {
-	walk.TableModelBase
-	walk.SorterBase
-	sortColumn int
-	sortOrder  walk.SortOrder
-	table      string
-	Items      []*Item
-}
-
-func (m *ItemModel) RowCount() int {
-	return len(m.Items)
-}
-func (m *ItemModel) prebookValue(row, col int) interface{} {
-	item := m.Items[row]
-
-	switch col {
-	case 0:
-		return item.Name
-	case 1:
-		return item.Mobile
-	case 2:
-		return strconv.Itoa(item.ArrivalDate.Day()) + "日" + strconv.Itoa(item.ArrivalDate.Hour()) + "点" + strconv.Itoa(item.ArrivalDate.Minute()) + "分"
-	case 3:
-		return item.Remarks
-	}
-	panic("unexpected col")
-}
-func (m *ItemModel) Default(row, col int) interface{} {
-	item := m.Items[row]
-
-	switch col {
-	case 0:
-		return item.Index
-	case 1:
-		return item.Name
-	case 2:
-		switch m.table {
-		case "prod":
-			return item.Price
-		case "prebook":
-			return strconv.Itoa(item.ArrivalDate.Day()) + "日" + strconv.Itoa(item.ArrivalDate.Hour()) + "点" + strconv.Itoa(item.ArrivalDate.Minute()) + "分"
-		default:
-			return item.Mobile
-		}
-	case 3:
-		return item.Remarks
-	}
-	panic("unexpected col")
-}
-
-func (m *ItemModel) Value(row, col int) interface{} {
-	switch m.table {
-	case "prebook":
-		return m.prebookValue(row, col)
-	default:
-		return m.Default(row, col)
-	}
-
-	//switch col {
-	//case 0:
-	//	return item.Index
-	//case 1:
-	//	return item.Name
-	//case 2:
-	//	switch m.table {
-	//	case "prod":
-	//		return item.Price
-	//	case "prebook":
-	//		return strconv.Itoa(item.ArrivalDate.Day()) + "日" + strconv.Itoa(item.ArrivalDate.Hour()) + "点" + strconv.Itoa(item.ArrivalDate.Minute()) + "分"
-	//	default:
-	//		return item.Mobile
-	//	}
-	//case 3:
-	//	return item.Remarks
-	//}
-	panic("unexpected col")
-}
-
-func (m *ItemModel) Checked(row int) bool {
-	return m.Items[row].checked
-}
-
-func (m *ItemModel) SetChecked(row int, checked bool) error {
-	m.Items[row].checked = checked
-	return nil
-}
-
-func (m *ItemModel) Sort(col int, order walk.SortOrder) error {
-	m.sortColumn, m.sortOrder = col, order
-	sort.Stable(m)
-	return m.SorterBase.Sort(col, order)
-}
-
-func (m *ItemModel) Len() int {
-	return len(m.Items)
-}
-
-func (m *ItemModel) Less(i, j int) bool {
-	a, b := m.Items[i], m.Items[j]
-
-	c := func(ls bool) bool {
-		if m.sortOrder == walk.SortAscending {
-			return ls
-		}
-
-		return !ls
-	}
-
-	switch m.sortColumn {
-	case 0:
-		return c(a.Index < b.Index)
-	case 1:
-		return c(a.Name < b.Name)
-	case 2:
-		return c(a.Mobile < b.Mobile)
-	case 3:
-		return c(a.Remarks < b.Remarks)
-	case 4:
-		return c(a.Price < b.Price)
-	}
-
-	panic("unreachable")
-}
-
-func (m *ItemModel) Swap(i, j int) {
-	m.Items[i], m.Items[j] = m.Items[j], m.Items[i]
-}
-
-func PreBookModel(time ...*time.Time) *ItemModel {
-	memList := models.PreBook{}.Search(time...)
-	m := &ItemModel{table: "prebook", Items: make([]*Item, len(memList))}
-	//m.items = make([]*Item, len(memList))
-	for i, j := range memList {
-		model := models.Search(models.Member{}, j.MemId)
-		//fmt.Println(item.Members)
-		//mem := models.Member{}.Search(j.MemId)
-		if len(model.Members) > 0 {
-			m.Items[i] = &Item{
-				Index:       i,
-				Name:        j.Name,
-				Mobile:      model.Members[0].Mobile,
-				Remarks:     j.Remarks,
-				ArrivalDate: j.ArrivalDate,
-			}
-		}
-	}
-	return m
-}
-
 func PreBooks(owner *walk.MainWindow) (int, error) {
-	mw := &MWindow{MainWindow: owner, model: PreBookModel(nil)}
+	mw := &MyMainWindow{MainWindow: owner, model: PreBookModel()}
 	var dlg *walk.Dialog
 	//var db *walk.DataBinder
 	//var acceptPB, cancelPB *walk.PushButton
@@ -189,7 +25,7 @@ func PreBooks(owner *walk.MainWindow) (int, error) {
 					HSpacer{},
 					PushButton{
 						Text:      "添加",
-						OnClicked: mw.openPreBook,
+						OnClicked: mw.NewPreBook,
 					},
 					PushButton{
 						Text: "删除",
@@ -278,18 +114,112 @@ func PreBooks(owner *walk.MainWindow) (int, error) {
 	}.Run(owner)
 }
 
-func (mw *MWindow) openPreBook() {
-	preBook := &models.PreBook{ArrivalDate: time.Now()}
-	if cmd, err := dialog.AddPreBook(mw, preBook); err != nil {
-		log.Print(err)
-	} else if cmd == walk.DlgCmdOK {
-		fmt.Println("DlgCmdOK")
-		preBook.Save()
-		mw.model.Items = append(mw.model.Items, &Item{
-			Index:   mw.model.Len(),
-			Name:    preBook.Name,
-			Remarks: preBook.Remarks,
-		})
-		mw.model.PublishRowsReset()
-	}
+func AddPreBook(owner walk.Form, preBook *models.PreBook) (int, error) {
+	var dlg *walk.Dialog
+	var db *walk.DataBinder
+	var acceptPB, cancelPB *walk.PushButton
+
+	return Dialog{
+		AssignTo:      &dlg,
+		Title:         "预约",
+		DefaultButton: &acceptPB,
+		CancelButton:  &cancelPB,
+		DataBinder: DataBinder{
+			AssignTo:       &db,
+			AutoSubmit:     true,
+			Name:           "preBook",
+			DataSource:     preBook,
+			ErrorPresenter: ToolTipErrorPresenter{},
+		},
+		MinSize: Size{600, 300},
+		Layout:  VBox{},
+		Children: []Widget{
+			Composite{
+				Layout: Grid{Columns: 2},
+				Children: []Widget{
+					Label{
+						Text: "姓名:",
+					},
+					LineEdit{
+						Text: Bind("Name", SelRequired{}),
+					},
+					Label{
+						Text: "手机:",
+					},
+					LineEdit{
+						Text:      Bind("Mobile"),
+						MaxLength: 11,
+					},
+
+					Label{
+						ColumnSpan: 2,
+						Text:       "备注:",
+					},
+					TextEdit{
+						ColumnSpan: 2,
+						MinSize:    Size{100, 50},
+						Text:       Bind("Remarks"),
+					},
+					Label{
+						Text: "会员:",
+					},
+					ComboBox{
+						Value:         Bind("MemId"),
+						BindingMember: "Id",
+						DisplayMember: "Name",
+						Model:         MemberList(),
+					},
+					Label{
+						Text: "项目:",
+					},
+					ComboBox{
+						Value:         Bind("ProdId"),
+						BindingMember: "Id",
+						DisplayMember: "Name",
+						Model:         ProdList(),
+					},
+					Label{
+						Text: "员工:",
+					},
+					ComboBox{
+						Value:         Bind("EmpId"),
+						BindingMember: "Id",
+						DisplayMember: "Name",
+						Model:         EmployeeList(),
+					},
+					Label{
+						Text: "预约时间:",
+					},
+					DateEdit{
+						Date:   Bind("ArrivalDate"),
+						Format: "yyyy-MM-dd HH:ss",
+						//MaxDate :time.Now().AddDate(0,0,14),
+						//MinDate:time.Now(),
+					},
+				},
+			},
+			Composite{
+				Layout: HBox{},
+				Children: []Widget{
+					HSpacer{},
+					PushButton{
+						AssignTo: &acceptPB,
+						Text:     "OK",
+						OnClicked: func() {
+							if err := db.Submit(); err != nil {
+								log.Print(err)
+								return
+							}
+							dlg.Accept()
+						},
+					},
+					PushButton{
+						AssignTo:  &cancelPB,
+						Text:      "Cancel",
+						OnClicked: func() { dlg.Cancel() },
+					},
+				},
+			},
+		},
+	}.Run(owner)
 }

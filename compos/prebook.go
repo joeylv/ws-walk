@@ -2,11 +2,10 @@ package compos
 
 import (
 	. "../manager"
+
 	"fmt"
-	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
 	"strconv"
-	"time"
 )
 
 //var tvToday, tvTom *walk.TableView
@@ -19,35 +18,34 @@ import (
 //func init() {
 //	fmt.Println("Init")
 //}
-type preSet struct {
-	tv    *walk.TableView
-	model *ItemModel
-	title string
-	count int
-}
+//type preSet struct {
+//	tv    *walk.TableView
+//	model *ItemModel
+//	title string
+//	count int
+//}
 
-func Prebook() []Widget {
-	now := time.Now()
-	today := time.Date(now.Year(), now.Month(), now.Day()+1, 00, 00, 00, 00, time.UTC)
-	tom := time.Date(now.Year(), now.Month(), now.Day()+2, 00, 00, 00, 00, time.UTC)
-	preToday := PreBookModel(&today)
-	preTom := PreBookModel(&today, &tom)
-	fmt.Println(len(preToday.Items))
+func Prebook(todaySet *PreSet, tomSet *PreSet) []Widget {
+	//now := time.Now()
+	//today := time.Date(now.Year(), now.Month(), now.Day()+1, 00, 00, 00, 00, time.UTC)
+	//tom := time.Date(now.Year(), now.Month(), now.Day()+2, 00, 00, 00, 00, time.UTC)
+	//preToday := PreBookModel(&today)
+	//preTom := PreBookModel(&today, &tom)
+	//fmt.Println(len(preToday.Items))
 	return []Widget{
 		Composite{
-			Border:  true,
-			Layout:  Grid{Columns: 2},
-			MinSize: Size{500, 370},
-			MaxSize: Size{500, 370},
-
-			Children: tableView(&preSet{&walk.TableView{}, preToday, "今日预约", len(preToday.Items)}),
+			Border:   true,
+			Layout:   Grid{Columns: 2},
+			MinSize:  Size{500, 370},
+			MaxSize:  Size{500, 370},
+			Children: tableView(todaySet),
 		},
 		Composite{
 			Border: true,
 			Layout: Grid{Columns: 2},
 			//MinSize: Size{500, 770},
 			//MaxSize: Size{500, 770},
-			Children: tableView(&preSet{&walk.TableView{}, preTom, "明日预约", len(preTom.Items)}),
+			Children: tableView(tomSet),
 		},
 		Composite{
 			//Layout:  Grid{Columns: 4, Spacing: 10},
@@ -61,16 +59,16 @@ func Prebook() []Widget {
 	}
 }
 
-func tableView(set *preSet) []Widget {
+func tableView(set *PreSet) []Widget {
 	return []Widget{
 		Label{
-			Text: set.title + strconv.Itoa(set.count) + "人次",
+			Text: set.Title + strconv.Itoa(set.Count) + "人次",
 			//MinSize: Size{250, 20},
 		},
 		TableView{
 			ColumnSpan: 2,
 			//MaxSize: Size{500, 420},
-			AssignTo: &set.tv,
+			AssignTo: &set.TableView,
 			//CheckBoxes:       true,
 			ColumnsOrderable: true,
 			MultiSelection:   true,
@@ -80,11 +78,11 @@ func tableView(set *preSet) []Widget {
 				{Title: "预约时间"},
 				{Title: "备注"},
 			},
-			Model: set.model,
+			Model: set.ItemModel,
 			OnCurrentIndexChanged: func() {
-				i := set.tv.CurrentIndex()
+				i := set.TableView.CurrentIndex()
 				if 0 <= i {
-					//fmt.Printf("OnCurrentIndexChanged: %v\n", )
+					fmt.Printf("OnCurrentIndexChanged: %v\n", set.ItemModel.Items[i])
 				}
 			},
 			//OnItemActivated: mw.tvItemactivated,
