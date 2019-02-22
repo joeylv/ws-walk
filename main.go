@@ -134,7 +134,7 @@ func main() {
 						},
 						Action{
 							Text:        "疗程",
-							OnTriggered: mw.NewProd,
+							OnTriggered: mw.NewCombo,
 						},
 					},
 					OnTriggered: mw.NewPreBook,

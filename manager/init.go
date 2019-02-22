@@ -325,7 +325,7 @@ func (mw *MyMainWindow) OpenEmployees() {
 }
 func (mw *MyMainWindow) OpenPreBooks() {
 	var outTE *walk.TextEdit
-	if cmd, err := PreBooks(mw.MainWindow); err != nil {
+	if cmd, err := PreBooks(mw); err != nil {
 		log.Print(err)
 	} else if cmd == walk.DlgCmdOK {
 		outTE.SetText(fmt.Sprintf("%+v", "CMD"))
@@ -399,11 +399,19 @@ func (mw *MyMainWindow) NewPreBook() {
 		//fmt.Println("OK")
 		model.PreBook = preBook
 		model.Save("PreBook")
-
-		//new := models.Search(models.Member{}, preBook.MemId)
+		mem := models.Member{}.Search(preBook.MemId)
 		//fmt.Println(item.Members)
+		if mw.model != nil {
+			mw.model.Items = append(mw.model.Items, &Item{
+				Index:       mw.model.Len(),
+				Name:        preBook.Name,
+				Mobile:      mem[0].Mobile,
+				Remarks:     preBook.Remarks,
+				ArrivalDate: preBook.ArrivalDate,
+			})
+			mw.model.PublishRowsReset()
+		}
 
-		//mem := models.Member{}.Search(preBook.MemId)
 		//if len(model.Members) > 0 {
 		//	m.Items[i] = &Item{
 		//		Index:       i,
@@ -413,14 +421,37 @@ func (mw *MyMainWindow) NewPreBook() {
 		//		ArrivalDate: j.ArrivalDate,
 		//	}
 		//}
-		mw.TodayPre.Items = append(mw.TodayPre.Items, &Item{
-			Index:       mw.TodayPre.Len(),
-			Name:        "test",
-			Mobile:      model.Members[0].Mobile,
-			Remarks:     "test",
-			ArrivalDate: time.Now(),
-		})
-		mw.model.PublishRowsReset()
+		now := time.Now()
+		today := time.Date(now.Year(), now.Month(), now.Day()+1, 00, 00, 00, 00, time.UTC)
+		tom := time.Date(now.Year(), now.Month(), now.Day()+2, 00, 00, 00, 00, time.UTC)
+		fmt.Println(tom)
+		fmt.Println(preBook.ArrivalDate.Before(tom))
+		fmt.Println(preBook.ArrivalDate.After(tom))
+		if preBook.ArrivalDate.Before(today) {
+			fmt.Println(mw.TodayPre.Items)
+			fmt.Println(mw.model)
+			mw.TodayPre.Items = append(mw.TodayPre.Items, &Item{
+				Index:       len(mw.TodayPre.Items),
+				Name:        preBook.Name,
+				Mobile:      mem[0].Mobile,
+				Remarks:     preBook.Remarks,
+				ArrivalDate: preBook.ArrivalDate,
+			})
+			mw.TodayPre.ItemModel.PublishRowsReset()
+		}
+		if preBook.ArrivalDate.After(today) {
+			fmt.Println(mw.TomPre.Items)
+			fmt.Println(mw.model)
+			mw.TomPre.Items = append(mw.TomPre.Items, &Item{
+				Index:       len(mw.TomPre.Items),
+				Name:        preBook.Name,
+				Mobile:      mem[0].Mobile,
+				Remarks:     preBook.Remarks,
+				ArrivalDate: preBook.ArrivalDate,
+			})
+			mw.TomPre.ItemModel.PublishRowsReset()
+		}
+
 		//preBook.Save()
 		//outTE.SetText(fmt.Sprintf("%+v", member))
 	}

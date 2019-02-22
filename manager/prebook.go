@@ -8,8 +8,9 @@ import (
 	"log"
 )
 
-func PreBooks(owner *walk.MainWindow) (int, error) {
-	mw := &MyMainWindow{MainWindow: owner, model: PreBookModel()}
+func PreBooks(owner *MyMainWindow) (int, error) {
+	owner.model = PreBookModel()
+	//mw := owner
 	var dlg *walk.Dialog
 	//var db *walk.DataBinder
 	//var acceptPB, cancelPB *walk.PushButton
@@ -25,14 +26,14 @@ func PreBooks(owner *walk.MainWindow) (int, error) {
 					HSpacer{},
 					PushButton{
 						Text:      "添加",
-						OnClicked: mw.NewPreBook,
+						OnClicked: owner.NewPreBook,
 					},
 					PushButton{
 						Text: "删除",
 						OnClicked: func() {
 							var items []*Item
-							remove := mw.tv.SelectedIndexes()
-							for i, x := range mw.model.Items {
+							remove := owner.tv.SelectedIndexes()
+							for i, x := range owner.model.Items {
 								removeOk := false
 								for _, j := range remove {
 									if i == j {
@@ -43,15 +44,15 @@ func PreBooks(owner *walk.MainWindow) (int, error) {
 									items = append(items, x)
 								}
 							}
-							mw.model.Items = items
-							mw.model.PublishRowsReset()
-							mw.tv.SetSelectedIndexes([]int{})
+							owner.model.Items = items
+							owner.model.PublishRowsReset()
+							owner.tv.SetSelectedIndexes([]int{})
 						},
 					},
 					PushButton{
 						Text: "ExecChecked",
 						OnClicked: func() {
-							for _, x := range mw.model.Items {
+							for _, x := range owner.model.Items {
 								if x.checked {
 									fmt.Printf("checked: %v\n", x)
 								}
@@ -62,10 +63,10 @@ func PreBooks(owner *walk.MainWindow) (int, error) {
 					PushButton{
 						Text: "AddPriceChecked",
 						OnClicked: func() {
-							for i, x := range mw.model.Items {
+							for i, x := range owner.model.Items {
 								if x.checked {
 									//x.Price++
-									mw.model.PublishRowChanged(i)
+									owner.model.PublishRowChanged(i)
 								}
 							}
 						},
@@ -77,19 +78,19 @@ func PreBooks(owner *walk.MainWindow) (int, error) {
 				ContextMenuItems: []MenuItem{
 					Action{
 						Text:        "I&nfo",
-						OnTriggered: mw.tvItemactivated,
+						OnTriggered: owner.tvItemactivated,
 					},
 					Action{
 						Text: "E&xit",
 						OnTriggered: func() {
-							mw.Close()
+							owner.Close()
 						},
 					},
 				},
-				Children: mw.tableColumn("编号", "名称", "次数", "备注"),
+				Children: owner.tableColumn("编号", "名称", "次数", "备注"),
 				//[]Widget{
 				//	TableView{
-				//		AssignTo:         &mw.tv,
+				//		AssignTo:         &owner.tv,
 				//		CheckBoxes:       true,
 				//		ColumnsOrderable: true,
 				//		MultiSelection:   true,
@@ -99,14 +100,14 @@ func PreBooks(owner *walk.MainWindow) (int, error) {
 				//			{Title: "次数"},
 				//			{Title: "备注"},
 				//		},
-				//		Model: mw.model,
+				//		Model: owner.model,
 				//		OnCurrentIndexChanged: func() {
-				//			i := mw.tv.CurrentIndex()
+				//			i := owner.tv.CurrentIndex()
 				//			if 0 <= i {
-				//				fmt.Printf("OnCurrentIndexChanged: %v\n", mw.model.items[i].Name)
+				//				fmt.Printf("OnCurrentIndexChanged: %v\n", owner.model.items[i].Name)
 				//			}
 				//		},
-				//		OnItemActivated: mw.tvItemactivated,
+				//		OnItemActivated: owner.tvItemactivated,
 				//	},
 				//},
 			},
