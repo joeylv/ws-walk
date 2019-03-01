@@ -2,7 +2,6 @@ package manager
 
 import (
 	"../models"
-	"fmt"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
 	"log"
@@ -19,99 +18,7 @@ func PreBooks(owner *MyMainWindow) (int, error) {
 		Title:    "预约管理",
 		MinSize:  Size{800, 600},
 		Layout:   VBox{},
-		Children: []Widget{
-			Composite{
-				Layout: HBox{MarginsZero: true},
-				Children: []Widget{
-					HSpacer{},
-					PushButton{
-						Text:      "添加",
-						OnClicked: owner.NewPreBook,
-					},
-					PushButton{
-						Text: "删除",
-						OnClicked: func() {
-							var items []*Item
-							remove := owner.tv.SelectedIndexes()
-							for i, x := range owner.model.Items {
-								removeOk := false
-								for _, j := range remove {
-									if i == j {
-										removeOk = true
-									}
-								}
-								if !removeOk {
-									items = append(items, x)
-								}
-							}
-							owner.model.Items = items
-							owner.model.PublishRowsReset()
-							owner.tv.SetSelectedIndexes([]int{})
-						},
-					},
-					PushButton{
-						Text: "ExecChecked",
-						OnClicked: func() {
-							for _, x := range owner.model.Items {
-								if x.checked {
-									fmt.Printf("checked: %v\n", x)
-								}
-							}
-							fmt.Println()
-						},
-					},
-					PushButton{
-						Text: "AddPriceChecked",
-						OnClicked: func() {
-							for i, x := range owner.model.Items {
-								if x.checked {
-									//x.Price++
-									owner.model.PublishRowChanged(i)
-								}
-							}
-						},
-					},
-				},
-			},
-			Composite{
-				Layout: VBox{},
-				ContextMenuItems: []MenuItem{
-					Action{
-						Text:        "I&nfo",
-						OnTriggered: owner.tvItemactivated,
-					},
-					Action{
-						Text: "E&xit",
-						OnTriggered: func() {
-							owner.Close()
-						},
-					},
-				},
-				Children: owner.tableColumn("编号", "名称", "次数", "备注"),
-				//[]Widget{
-				//	TableView{
-				//		AssignTo:         &owner.tv,
-				//		CheckBoxes:       true,
-				//		ColumnsOrderable: true,
-				//		MultiSelection:   true,
-				//		Columns: []TableViewColumn{
-				//			{Title: "编号"},
-				//			{Title: "名称"},
-				//			{Title: "次数"},
-				//			{Title: "备注"},
-				//		},
-				//		Model: owner.model,
-				//		OnCurrentIndexChanged: func() {
-				//			i := owner.tv.CurrentIndex()
-				//			if 0 <= i {
-				//				fmt.Printf("OnCurrentIndexChanged: %v\n", owner.model.items[i].Name)
-				//			}
-				//		},
-				//		OnItemActivated: owner.tvItemactivated,
-				//	},
-				//},
-			},
-		},
+		Children: owner.Manager("PreBook", "编号", "名称", "次数", "备注"),
 	}.Run(owner)
 }
 

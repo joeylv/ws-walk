@@ -2,6 +2,7 @@ package main
 
 import (
 	"../models"
+	"../utils"
 	"fmt"
 )
 
@@ -24,8 +25,8 @@ func tysw() {
 	case models.Employee:
 		fmt.Println("Employee", a.Search(0))
 	case models.Member:
-		fmt.Println("Member", a.Search(0))
-		list = a.Search(0)
+		fmt.Println("Member", a.Search())
+		list = a.Search()
 	default:
 		fmt.Println("unknown type", a)
 
@@ -44,7 +45,9 @@ func tysw() {
 }
 
 func main() {
-	tysw()
+	//tysw()
+	utils.NewFile()
+	utils.Chart()
 	//fmt.Println(x.(models.PreBook).Search())
 	//e1, ok := x.(models.Employee)
 	//fmt.Println(e1, ok)

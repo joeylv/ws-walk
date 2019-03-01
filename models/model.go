@@ -7,73 +7,88 @@ import (
 	"time"
 )
 
-func (m Model) Save(d string) {
-	db := GetConn()
-	defer db.Close()
-	switch d {
-	case "PreBook":
-		db.Create(&m.PreBook)
-		//fmt.Println("PreBook", a.Search())
-	case "Employee":
-		db.Create(&m.Employee)
-		//fmt.Println("Employee", a.Search())
-	case "Member":
-		db.Create(&m.Member)
-	case "Prod":
-		db.Create(&m.Prod)
-		//fmt.Println("Employee", a.Search())
-	case "Combo":
-		db.Create(&m.Combo)
-	default:
-		fmt.Println("unknown type", m)
-	}
-
-}
-
-func Search(p interface{}, id uint) *Model {
+func Search(p interface{}) *Model {
 	db := GetConn()
 	defer db.Close()
 	model := &Model{}
 	switch a := p.(type) {
 	case PreBook:
 		var list []PreBook
-		if id == 0 {
-			db.Find(&list)
-		} else {
-			db.First(&list, id)
-		}
+		db.Find(&list)
 		//fmt.Println("Member search")
 		model.PreBooks = list
 		//fmt.Println("PreBook", a.Search())
 	case Employee:
 		var list []Employee
-		if id == 0 {
-			db.Find(&list)
-		} else {
-			db.First(&list, id)
-		}
+		db.Find(&list)
 		//fmt.Println("Member search")
 		model.Employees = list
 		//fmt.Println("Employee", a.Search())
 	case Member:
 		var list []Member
-		if id == 0 {
-			db.Find(&list)
-		} else {
-			db.First(&list, id)
-		}
+		db.Find(&list)
 		//fmt.Println("Member search")
 		model.Members = list
 		//fmt.Println("Employee", a.Search())
 	case Combo:
 		var list []Combo
-		if id == 0 {
-			db.Find(&list)
-		} else {
+		db.Find(&list)
+		//fmt.Println("Member search")
+		model.Combos = list
+	case Card:
+		var list []Card
+		db.Find(&list)
+		//fmt.Println("Member search")
+		model.Cards = list
+	default:
+		fmt.Println("unknown type", a)
+	}
+	return model
+}
+
+func Get(p interface{}, id uint) *Model {
+	db := GetConn()
+	defer db.Close()
+	model := &Model{}
+	switch a := p.(type) {
+	case PreBook:
+		var list PreBook
+		if id != 0 {
 			db.First(&list, id)
 		}
 		//fmt.Println("Member search")
-		model.Combos = list
+		model.PreBook = list
+		//fmt.Println("PreBook", a.Search())
+	case Employee:
+		var list Employee
+		if id != 0 {
+			db.First(&list, id)
+		}
+		//fmt.Println("Member search")
+		model.Employee = list
+		//fmt.Println("Employee", a.Search())
+	case Member:
+		var list Member
+		if id != 0 {
+			db.First(&list, id)
+		}
+		//fmt.Println("Member search")
+		model.Member = list
+		//fmt.Println("Employee", a.Search())
+	case Combo:
+		var list Combo
+		if id != 0 {
+			db.First(&list, id)
+		}
+		//fmt.Println("Member search")
+		model.Combo = list
+	case Card:
+		var list Card
+		if id != 0 {
+			db.First(&list, id)
+		}
+		//fmt.Println("Member search")
+		model.Card = list
 	default:
 		fmt.Println("unknown type", a)
 	}
@@ -81,12 +96,14 @@ func Search(p interface{}, id uint) *Model {
 }
 
 type Model struct {
-	*Member
-	*Prod
-	*PreBook
-	*Combo
-	*Employee
-	*Record
+	Member
+	Prod
+	PreBook
+	Combo
+	Employee
+	Record
+	Card
+	Consume
 
 	Members   []Member
 	Prods     []Prod
@@ -94,6 +111,8 @@ type Model struct {
 	Combos    []Combo
 	Employees []Employee
 	Records   []Record
+	Cards     []Card
+	Consumes  []Consume
 }
 
 type Member struct {
@@ -102,9 +121,21 @@ type Member struct {
 	Name     string
 	Mobile   string `gorm:"not null;unique"`
 	Remarks  string
+	Balance  int
 	Discount float32
+	//Prepaid int
+	//Discount float32
 	PreBooks []PreBook
+	Combos   []Combo
 	Records  []Record
+}
+
+type Card struct {
+	gorm.Model
+	Name     string
+	Price    int
+	Discount float32
+	Remarks  string
 }
 
 type Employee struct {
@@ -123,8 +154,16 @@ type Prod struct {
 	Remarks string
 }
 
+type Consume struct {
+	gorm.Model
+	MemId   uint
+	ComboId uint
+	Count   int
+}
+
 type Combo struct {
-	Prod   []Prod `gorm:"ForeignKey:ProdId"`
+	gorm.Model
+	//Prod   []Prod `gorm:"ForeignKey:ProdId"`
 	ProdId uint
 	Code   string
 	Name   string
@@ -155,7 +194,8 @@ type Record struct {
 	//Member  Member `gorm:"ForeignKey:recordMId"`
 	MemId   uint
 	EmpId   uint
-	Combo   uint
+	CardId  uint
+	ComboId uint
 	Remarks string
 }
 
@@ -206,23 +246,30 @@ func Migrate() {
 	defer db.Close()
 	fmt.Println("AutoMigrate")
 	// Migrate the schema
-	db.AutoMigrate(&Member{}, &Employee{}, &Combo{})
+	db.AutoMigrate(&Member{}, &Employee{}, &Combo{}, &Card{})
 	//db.AutoMigrate(&Combo{}, &PreBook{})
-	db.AutoMigrate(&Prod{}, &Record{}, &PreBook{})
-	db.Model(&Member{}).Related(&PreBook{})
+	db.AutoMigrate(&Prod{}, &Record{}, &PreBook{}, &Consume{})
+	//db.Model(&Member{}).Related(&PreBook{})
 }
 
-func (m Member) Search(id uint) []Member {
+func (m Member) Search() []Member {
 	db := GetConn()
 	defer db.Close()
-	var product []Member
-	if id == 0 {
-		db.Find(&product)
-	} else {
-		db.First(&product, id)
+	var list []Member
+	db.Find(&list)
+	return list
+
+}
+
+func (m Member) Get(id uint) Member {
+	db := GetConn()
+	defer db.Close()
+	var list Member
+	if id != 0 {
+		db.First(&list, id)
 	}
 	//fmt.Println("Member search")
-	return product
+	return list
 
 }
 func (m Member) Save() {
@@ -232,17 +279,24 @@ func (m Member) Save() {
 	db.Create(&m)
 }
 
+func (m Card) Save() {
+	db := GetConn()
+	defer db.Close()
+	//fmt.Println(m)
+	db.Create(&m)
+}
+
 func (m Employee) Search(id uint) []Employee {
 	db := GetConn()
 	defer db.Close()
-	var product []Employee
+	var list []Employee
 	if id == 0 {
-		db.Find(&product)
+		db.Find(&list)
 	} else {
-		db.First(&product, id)
+		db.First(&list, id)
 	}
 	//fmt.Println("Employee search")
-	return product
+	return list
 }
 func (e Employee) Save() {
 	db := GetConn()
@@ -253,10 +307,10 @@ func (e Employee) Save() {
 func (p Prod) Search() []Prod {
 	db := GetConn()
 	defer db.Close()
-	var product []Prod
-	db.Find(&product) // find product with id 1
+	var list []Prod
+	db.Find(&list) // find product with id 1
 	//fmt.Println("Prod search")
-	return product
+	return list
 }
 func (p Prod) Save() {
 	db := GetConn()
@@ -264,13 +318,44 @@ func (p Prod) Save() {
 	db.Create(&p)
 }
 
+func (c Consume) Search(Id ...uint) []Consume {
+	db := GetConn()
+	defer db.Close()
+	var list []Consume
+	if len(Id) > 0 {
+		db.Where(&Consume{MemId: Id[0], ComboId: Id[1]}).Where("count > ? ", 0).First(&list)
+	} else {
+		db.Find(&list) // find product with id 1
+	}
+	return list
+}
+func (c Consume) Save(record *Record) error {
+	db := GetConn()
+	defer db.Close()
+	tx := db.Begin()
+	// 注意，一旦你在一个事务中，使用tx作为数据库句柄
+	//consume[0].Save()
+	if err := tx.Create(c).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Create(record).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
 func (c Combo) Search() []Combo {
 	db := GetConn()
 	defer db.Close()
-	var product []Combo
-	db.Find(&product) // find product with id 1
+	var list []Combo
+	db.Find(&list) // find product with id 1
 	//fmt.Println("Combo search")
-	return product
+	return list
 }
 func (c Combo) Save() {
 	db := GetConn()
@@ -281,29 +366,29 @@ func (c Combo) Save() {
 func (p PreBook) Search(time ...*time.Time) []PreBook {
 	db := GetConn()
 	defer db.Close()
-	var product []PreBook
+	var list []PreBook
 	if len(time) == 1 {
 		//fmt.Println(time[0])
-		db.Where("arrival_date < ?", time).Find(&product)
+		db.Where("arrival_date < ?", time).Find(&list)
 	} else if len(time) == 2 {
 		//fmt.Println(time[0])
 		//fmt.Println(time[1])
-		db.Where("arrival_date BETWEEN ? AND ?", time[0], time[1]).Find(&product)
+		db.Where("arrival_date BETWEEN ? AND ?", time[0], time[1]).Find(&list)
 	} else {
-		db.Find(&product) // find All
+		db.Find(&list) // find All
 	}
 
 	//fmt.Println("PreBook search")
-	return product
+	return list
 }
 
 func (p Record) Search() []Record {
 	db := GetConn()
 	defer db.Close()
-	var product []Record
-	db.Find(&product) // find product with id 1
+	var list []Record
+	db.Find(&list) // find product with id 1
 	//fmt.Println("PreBook search")
-	return product
+	return list
 }
 func (p Record) Save() {
 	db := GetConn()

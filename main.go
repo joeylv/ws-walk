@@ -38,7 +38,7 @@ func main() {
 	mw := &MyMainWindow{TodayPre: &PreSet{&walk.TableView{}, preToday, "今日预约", len(preToday.Items)}, TomPre: &PreSet{&walk.TableView{}, preTom, "明日预约", len(preTom.Items)}}
 
 	var openAction, showAboutBoxAction *walk.Action
-	var recentMenu *walk.Menu
+	//var recentMenu *walk.Menu
 	var toggleSpecialModePB *walk.PushButton
 
 	if err := (MainWindow{
@@ -47,7 +47,7 @@ func main() {
 		Icon:     "img/stop.ico",
 		MenuItems: []MenuItem{
 			Menu{
-				Text: "&打开",
+				Text: "&会员消费",
 				Items: []MenuItem{
 					Action{
 						AssignTo:    &openAction,
@@ -58,46 +58,47 @@ func main() {
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyO},
 						OnTriggered: mw.OpenAction_Triggered,
 					},
-					//Action{
-					//	Text:        "Dialog",
-					//	OnTriggered: mw.openDialog,
-					//},
-					//Action{
-					//	Text:        "Member",
-					//	OnTriggered: mw.openMember,
-					//},
 					Action{
-						Text:        "会员",
+						Text:        "会员管理",
+						OnTriggered: mw.OpenDialog,
+					},
+					Action{
+						Text:        "会员管理",
 						OnTriggered: mw.OpenMembers,
 					},
 					Action{
-						Text:        "预约",
+						Text:        "预约管理",
 						OnTriggered: mw.OpenPreBooks,
 					},
 					Action{
-						Text:        "项目",
-						OnTriggered: mw.OpenProducts,
-					},
-					Action{
-						Text:        "疗程",
-						OnTriggered: mw.OpenCombos,
-					},
-					Action{
-						Text:        "员工",
-						OnTriggered: mw.OpenEmployees,
-					},
-					Action{
-						Text:        "消费",
+						Text:        "消费管理",
 						OnTriggered: mw.OpenRecords,
 					},
-					Menu{
-						AssignTo: &recentMenu,
-						Text:     "Recent",
-					},
+					//Menu{
+					//	AssignTo: &recentMenu,
+					//	Text:     "Recent",
+					//},
 					Separator{},
 					Action{
 						Text:        "E&xit",
 						OnTriggered: func() { mw.Close() },
+					},
+				},
+			},
+			Menu{
+				Text: "&服务疗程",
+				Items: []MenuItem{
+					Action{
+						Text:        "项目管理",
+						OnTriggered: mw.OpenProducts,
+					},
+					Action{
+						Text:        "疗程管理",
+						OnTriggered: mw.OpenCombos,
+					},
+					Action{
+						Text:        "员工管理",
+						OnTriggered: mw.OpenEmployees,
 					},
 				},
 			},
@@ -156,18 +157,10 @@ func main() {
 							Text:        "消费",
 							OnTriggered: mw.NewRecord,
 						},
-						//Action{
-						//	Text:        "X",
-						//	OnTriggered: mw.changeViewAction_Triggered,
-						//},
-						//Action{
-						//	Text:        "Y",
-						//	OnTriggered: mw.changeViewAction_Triggered,
-						//},
-						//Action{
-						//	Text:        "Z",
-						//	OnTriggered: mw.changeViewAction_Triggered,
-						//},
+						Action{
+							Text:        "折扣卡",
+							OnTriggered: mw.NewCard,
+						},
 					},
 					OnTriggered: mw.NewMember,
 				},
@@ -243,16 +236,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	addRecentFileActions := func(texts ...string) {
-		for _, text := range texts {
-			a := walk.NewAction()
-			a.SetText(text)
-			a.Triggered().Attach(mw.OpenAction_Triggered)
-			recentMenu.Actions().Add(a)
-		}
-	}
-
-	addRecentFileActions("Foo", "Bar", "Baz")
+	//addRecentFileActions := func(texts ...string) {
+	//	for _, text := range texts {
+	//		a := walk.NewAction()
+	//		a.SetText(text)
+	//		a.Triggered().Attach(mw.OpenAction_Triggered)
+	//		recentMenu.Actions().Add(a)
+	//	}
+	//}
+	//
+	//addRecentFileActions("Foo", "Bar", "Baz")
 
 	mw.Run()
 

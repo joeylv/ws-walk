@@ -8,9 +8,10 @@ import (
 )
 
 type Species struct {
-	Id   uint
-	Name string
-	Time string
+	Id    uint
+	Name  string
+	Time  string
+	Value float32
 }
 
 func EmployeeList() []*Species {
@@ -22,6 +23,7 @@ func EmployeeList() []*Species {
 	}
 	return list
 }
+
 func ProdList() []*Species {
 	prodList := models.Prod{}.Search()
 	list := make([]*Species, 0)
@@ -30,8 +32,9 @@ func ProdList() []*Species {
 	}
 	return list
 }
+
 func PreBookList() []*Species {
-	memList := models.PreBook{}.Search(nil)
+	memList := models.PreBook{}.Search()
 	//fmt.Println(memList)
 	list := make([]*Species, 0)
 	for _, j := range memList {
@@ -41,13 +44,40 @@ func PreBookList() []*Species {
 }
 
 func MemberList() []*Species {
-	memList := models.Member{}.Search(0)
+	memList := models.Member{}.Search()
 	//fmt.Println(memList)
 	list := make([]*Species, 0)
 	for _, j := range memList {
 		list = append(list, &Species{Id: j.ID, Name: j.Name})
 	}
 	return list
+}
+
+func ComboList() []*Species {
+	comboList := models.Combo{}.Search()
+	list := make([]*Species, 0)
+	for _, j := range comboList {
+		list = append(list, &Species{Id: j.ID, Name: j.Name})
+	}
+	return list
+}
+
+func CardList() []*Species {
+	memList := models.Search(models.Card{})
+	//fmt.Println(memList)
+	list := make([]*Species, 0)
+	for _, j := range memList.Cards {
+		list = append(list, &Species{Id: j.ID, Name: j.Name})
+	}
+	return list
+}
+
+func Discounts() []*Species {
+	return []*Species{
+		{Name: "9折", Value: 0.9},
+		{Name: "8折", Value: 0.8},
+		{Name: "6折", Value: 0.6},
+	}
 }
 
 func KnownSpecies() []*Species {

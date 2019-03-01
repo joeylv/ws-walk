@@ -2,30 +2,89 @@ package manager
 
 import (
 	"../models"
-	"fmt"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
 	"log"
 )
 
+//func CreateAnimals(db *gorm.DB) err {
+//	tx := db.Begin()
+//	// 注意，一旦你在一个事务中，使用tx作为数据库句柄
+//
+//	if err := tx.Create(&Animal{Name: "Giraffe"}).Error; err != nil {
+//		tx.Rollback()
+//		return err
+//	}
+//
+//	if err := tx.Create(&Animal{Name: "Lion"}).Error; err != nil {
+//		tx.Rollback()
+//		return err
+//	}
+//
+//	tx.Commit()
+//	return nil
+//}
+
 func RecordModel() *ItemModel {
 	records := models.Record{}.Search()
 	m := &ItemModel{table: "record", Items: make([]*Item, len(records))}
-	//m := new(ItemModel)
-	//m.items = make([]*Item, len(memList))
+
 	for i, j := range records {
+		//fmt.Println(j.MemId)
 		m.Items[i] = &Item{
-			Index: i,
-			//Name:    j.Name,
-			//Price:   j.Price,
+			Index:   i,
 			Remarks: j.Remarks,
 		}
+		go func() {
+			mem := models.Member{}.Get(j.MemId)
+			//fmt.Println(mem)
+			m.Items[i].Name = mem.Name
+		}()
+
+		go func() {
+			prod := models.Get(models.Prod{}, j.ProdId).Prod
+			if "" != prod.Name {
+				m.Items[i].Prod = prod.Name
+				m.Items[i].Price = float32(prod.Price)
+			}
+
+		}()
+		go func() {
+			emp := models.Get(models.Employee{}, j.EmpId).Employee
+			m.Items[i].EName = emp.Name
+		}()
+		go func() {
+			card := models.Get(models.Card{}, j.CardId).Card
+			if "" != card.Name {
+				m.Items[i].Prod = card.Name
+				m.Items[i].Price = float32(card.Price)
+			}
+
+		}()
+		go func() {
+			combo := models.Get(models.Combo{}, j.ComboId).Combo
+			if "" != combo.Name {
+				m.Items[i].Prod = combo.Name
+				m.Items[i].Price = float32(combo.Price)
+			}
+
+		}()
+		//fmt.Println(mem)
+		//fmt.Println(prod)
+		//fmt.Println(emp)
+		//fmt.Println(card)
+		//fmt.Println(emp.Employee.Name)
+		//fmt.Println(prod.Prod.Name)
+		//fmt.Println(card.Card.Name)
+		//fmt.Println(models.Get(models.Card{}, j.CardId).Card.Price)
+
 	}
 	return m
 }
 
-func Records(owner *walk.MainWindow) (int, error) {
-	mw := &MyMainWindow{MainWindow: owner, model: RecordModel()}
+func Records(owner *MyMainWindow) (int, error) {
+	//mw := &MyMainWindow{MainWindow: owner, model: RecordModel()}
+	owner.model = RecordModel()
 	var dlg *walk.Dialog
 	//var db *walk.DataBinder
 	//var acceptPB, cancelPB *walk.PushButton
@@ -34,108 +93,7 @@ func Records(owner *walk.MainWindow) (int, error) {
 		Title:    "消费管理",
 		MinSize:  Size{800, 600},
 		Layout:   VBox{},
-		Children: []Widget{
-			Composite{
-				Layout: HBox{MarginsZero: true},
-				Children: []Widget{
-					HSpacer{},
-					PushButton{
-						Text:      "添加",
-						OnClicked: mw.NewRecord,
-						//func() {
-						//	//mw.model.items = append(mw.model.items, &Condom{
-						//	//	Index: mw.model.Len() + 1,
-						//	//	Name:  "第六感",
-						//	//	Price: mw.model.Len() * 5,
-						//	//})
-						//	mw.model.PublishRowsReset()
-						//	mw.tv.SetSelectedIndexes([]int{})
-						//},
-					},
-					PushButton{
-						Text: "删除",
-						OnClicked: func() {
-							var items []*Item
-							remove := mw.tv.SelectedIndexes()
-							for i, x := range mw.model.Items {
-								removeOk := false
-								for _, j := range remove {
-									if i == j {
-										removeOk = true
-									}
-								}
-								if !removeOk {
-									items = append(items, x)
-								}
-							}
-							mw.model.Items = items
-							mw.model.PublishRowsReset()
-							mw.tv.SetSelectedIndexes([]int{})
-						},
-					},
-					PushButton{
-						Text: "ExecChecked",
-						OnClicked: func() {
-							for _, x := range mw.model.Items {
-								if x.checked {
-									fmt.Printf("checked: %v\n", x)
-								}
-							}
-							fmt.Println()
-						},
-					},
-					PushButton{
-						Text: "AddPriceChecked",
-						OnClicked: func() {
-							for i, x := range mw.model.Items {
-								if x.checked {
-									//x.Price++
-									mw.model.PublishRowChanged(i)
-								}
-							}
-						},
-					},
-				},
-			},
-			Composite{
-				Layout: VBox{},
-				ContextMenuItems: []MenuItem{
-					Action{
-						Text:        "I&nfo",
-						OnTriggered: mw.tvItemactivated,
-					},
-					Action{
-						Text: "E&xit",
-						OnTriggered: func() {
-							mw.Close()
-						},
-					},
-				},
-				Children: mw.tableColumn("编号", "名称", "手机", "备注"),
-				//[]Widget{
-				//	TableView{
-				//		AssignTo:         &mw.tv,
-				//		CheckBoxes:       true,
-				//		ColumnsOrderable: true,
-				//		MultiSelection:   true,
-				//		Columns: []TableViewColumn{
-				//			{Title: "编号"},
-				//			{Title: "名称"},
-				//			{Title: "手机"},
-				//			{Title: "备注"},
-				//		},
-				//		Model: mw.model,
-				//		OnCurrentIndexChanged: func() {
-				//			i := mw.tv.CurrentIndex()
-				//			if 0 <= i {
-				//				fmt.Printf("OnCurrentIndexChanged: %v\n", mw.model.items[i].Name)
-				//			}
-				//		},
-				//		OnItemActivated: mw.tvItemactivated,
-				//	},
-				//},
-			},
-		},
+		Children: owner.Manager("Record", "序号", "会员", "员工", "项目", "价格", "备注"),
 	}.Run(owner)
 }
 func AddRecord(owner walk.Form, member *models.Record) (int, error) {
@@ -154,6 +112,121 @@ func AddRecord(owner walk.Form, member *models.Record) (int, error) {
 			DataSource:     member,
 			ErrorPresenter: ToolTipErrorPresenter{},
 		},
+		MinSize: Size{400, 300},
+		Layout:  VBox{},
+		Children: []Widget{
+			Composite{
+				Layout: Grid{Columns: 2},
+				Children: []Widget{
+					Label{
+						Text:          "会员:",
+						TextAlignment: AlignFar,
+					},
+					ComboBox{
+						Value:         Bind("MemId"),
+						MinSize:       Size{50, 20},
+						BindingMember: "Id",
+						DisplayMember: "Name",
+						Model:         MemberList(),
+					},
+					Label{
+						Text:          "员工:",
+						TextAlignment: AlignFar,
+					},
+					ComboBox{
+						Value:         Bind("EmpId"),
+						MinSize:       Size{50, 20},
+						BindingMember: "Id",
+						DisplayMember: "Name",
+						Model:         EmployeeList(),
+					},
+					Label{
+						Text:          "项目:",
+						TextAlignment: AlignFar,
+					},
+					ComboBox{
+						Value:         Bind("ProdId"),
+						MinSize:       Size{50, 20},
+						BindingMember: "Id",
+						DisplayMember: "Name",
+						Model:         ProdList(),
+					},
+					Label{
+						Text:          "疗程:",
+						TextAlignment: AlignFar,
+					},
+					ComboBox{
+						Value:         Bind("ComboId"),
+						MinSize:       Size{50, 20},
+						BindingMember: "Id",
+						DisplayMember: "Name",
+						Model:         ComboList(),
+					},
+					Label{
+						Text:          "售卡:",
+						TextAlignment: AlignFar,
+					},
+					ComboBox{
+						Value:         Bind("CardId"),
+						MinSize:       Size{50, 20},
+						BindingMember: "Id",
+						DisplayMember: "Name",
+						Model:         CardList(),
+					},
+					Label{
+						ColumnSpan: 2,
+						Text:       "备注:",
+					},
+					TextEdit{
+						ColumnSpan: 2,
+						MinSize:    Size{100, 50},
+						Text:       Bind("Remarks"),
+					},
+				},
+			},
+			Composite{
+				Layout: HBox{},
+				Children: []Widget{
+					HSpacer{},
+					PushButton{
+						AssignTo: &acceptPB,
+						Text:     "OK",
+						OnClicked: func() {
+							if err := db.Submit(); err != nil {
+								log.Print(err)
+								walk.MsgBox(owner, "错误提示", err.Error(), walk.MsgBoxIconError)
+								return
+							}
+							dlg.Accept()
+						},
+					},
+					PushButton{
+						AssignTo:  &cancelPB,
+						Text:      "Cancel",
+						OnClicked: func() { dlg.Cancel() },
+					},
+				},
+			},
+		},
+	}.Run(owner)
+}
+
+func AddCard(owner walk.Form, prepaid *models.Card) (int, error) {
+	var dlg *walk.Dialog
+	var db *walk.DataBinder
+	var acceptPB, cancelPB *walk.PushButton
+	return Dialog{
+		AssignTo:      &dlg,
+		Title:         "添加折扣卡",
+		DefaultButton: &acceptPB,
+		CancelButton:  &cancelPB,
+		DataBinder: DataBinder{
+			AssignTo:       &db,
+			AutoSubmit:     true,
+			Name:           "Prepaid",
+			DataSource:     prepaid,
+			ErrorPresenter: ToolTipErrorPresenter{},
+		},
 		MinSize: Size{600, 300},
 		Layout:  VBox{},
 		Children: []Widget{
@@ -161,31 +234,32 @@ func AddRecord(owner walk.Form, member *models.Record) (int, error) {
 				Layout: Grid{Columns: 2},
 				Children: []Widget{
 					Label{
-						Text: "会员:",
+						Text: "名称:",
 					},
-					ComboBox{
-						Value:         Bind("MemId"),
-						BindingMember: "Id",
-						DisplayMember: "Name",
-						Model:         MemberList(),
+					LineEdit{
+						Text:    Bind("Name"),
+						MinSize: Size{50, 20},
 					},
 					Label{
-						Text: "项目:",
+						Text: "价格:",
 					},
-					ComboBox{
-						Value:         Bind("ProdId"),
-						BindingMember: "Id",
-						DisplayMember: "Name",
-						Model:         ProdList(),
+					NumberEdit{
+						Value:   Bind("Price"),
+						MinSize: Size{50, 20},
 					},
 					Label{
-						Text: "员工:",
+						Text: "折扣:",
 					},
-					ComboBox{
-						Value:         Bind("EmpId"),
-						BindingMember: "Id",
-						DisplayMember: "Name",
-						Model:         EmployeeList(),
+					//ComboBox{
+					//	Value:         Bind("Discount", SelRequired{}),
+					//	BindingMember: "Value",
+					//	DisplayMember: "Name",
+					//	Model:         Discounts(),
+					//},
+					NumberEdit{
+						Value:    Bind("Discount", Range{0.30, 0.95}),
+						MinSize:  Size{50, 20},
+						Decimals: 2,
 					},
 					Label{
 						ColumnSpan: 2,

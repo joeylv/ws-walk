@@ -30,6 +30,8 @@ type MyMainWindow struct {
 type Item struct {
 	Index       int
 	Name        string
+	EName       string
+	Prod        string
 	Mobile      string
 	Price       float32
 	Count       int
@@ -66,9 +68,28 @@ func (m *ItemModel) prebookValue(row, col int) interface{} {
 	}
 	panic("unexpected col")
 }
-func (m *ItemModel) Default(row, col int) interface{} {
+
+func (m *ItemModel) recordValue(row, col int) interface{} {
 	item := m.Items[row]
 
+	switch col {
+	case 0:
+		return item.Index
+	case 1:
+		return item.Name
+	case 2:
+		return item.EName
+	case 3:
+		return item.Prod
+	case 4:
+		return item.Price
+	case 5:
+		return item.Remarks
+	}
+	panic("unexpected col")
+}
+func (m *ItemModel) Default(row, col int) interface{} {
+	item := m.Items[row]
 	switch col {
 	case 0:
 		return item.Index
@@ -93,27 +114,12 @@ func (m *ItemModel) Value(row, col int) interface{} {
 	switch m.table {
 	case "prebook":
 		return m.prebookValue(row, col)
+	case "record":
+		return m.recordValue(row, col)
 	default:
 		return m.Default(row, col)
 	}
 
-	//switch col {
-	//case 0:
-	//	return item.Index
-	//case 1:
-	//	return item.Name
-	//case 2:
-	//	switch m.table {
-	//	case "prod":
-	//		return item.Price
-	//	case "prebook":
-	//		return strconv.Itoa(item.ArrivalDate.Day()) + "日" + strconv.Itoa(item.ArrivalDate.Hour()) + "点" + strconv.Itoa(item.ArrivalDate.Minute()) + "分"
-	//	default:
-	//		return item.Mobile
-	//	}
-	//case 3:
-	//	return item.Remarks
-	//}
 	panic("unexpected col")
 }
 
@@ -168,31 +174,28 @@ func (m *ItemModel) Swap(i, j int) {
 }
 
 func (s *MyMainWindow) GetModel(d string, time ...*time.Time) *ItemModel {
-	fmt.Println("GoGoGo!!!")
 	//var memList *models.Model
 	var m *ItemModel
 	switch d {
 	case "PreBook":
 		go func() {
-			memList := models.Search(models.PreBook{}, 0)
+			memList := models.Search(models.PreBook{})
 			m := &ItemModel{table: "prebook", Items: make([]*Item, len(memList.PreBooks))}
 			for i, j := range memList.PreBooks {
-				model := models.Search(models.Member{}, j.MemId)
+				model := models.Get(models.Member{}, j.MemId)
 				//fmt.Println(item.Members)
 				//mem := models.Member{}.Search(j.MemId)
-				if len(model.Members) > 0 {
-					m.Items[i] = &Item{
-						Index:       i,
-						Name:        j.Name,
-						Mobile:      model.Members[0].Mobile,
-						Remarks:     j.Remarks,
-						ArrivalDate: j.ArrivalDate,
-					}
+				m.Items[i] = &Item{
+					Index:       i,
+					Name:        j.Name,
+					Mobile:      model.Member.Mobile,
+					Remarks:     j.Remarks,
+					ArrivalDate: j.ArrivalDate,
 				}
 			}
 		}()
 	case "Member":
-		memList := models.Search(models.Member{}, 0)
+		memList := models.Search(models.Member{})
 		m := &ItemModel{table: "member", Items: make([]*Item, len(memList.Members))}
 		//m.items = make([]*Item, len(memList))
 		for i, j := range memList.Members {
@@ -204,7 +207,7 @@ func (s *MyMainWindow) GetModel(d string, time ...*time.Time) *ItemModel {
 			}
 		}
 	case "Combo":
-		memList := models.Search(models.Combo{}, 0)
+		memList := models.Search(models.Combo{})
 		//models.Combo{}.Search()
 		m = &ItemModel{table: "combo", Items: make([]*Item, len(memList.Combos))}
 		//m.items = make([]*Item, len(memList))
@@ -224,7 +227,7 @@ func (s *MyMainWindow) GetModel(d string, time ...*time.Time) *ItemModel {
 			//fmt.Println(reflect.TypeOf(j).Elem())
 		}
 	case "Employee":
-		memList := models.Search(models.Employee{}, 0)
+		memList := models.Search(models.Employee{})
 		//models.Combo{}.Search()
 		m = &ItemModel{table: "emp", Items: make([]*Item, len(memList.Employees))}
 		//m.items = make([]*Item, len(memList))
@@ -254,23 +257,20 @@ func PreBookModel(time ...*time.Time) *ItemModel {
 	m := &ItemModel{table: "prebook", Items: make([]*Item, len(memList))}
 	//m.items = make([]*Item, len(memList))
 	for i, j := range memList {
-		model := models.Search(models.Member{}, j.MemId)
+		model := models.Get(models.Member{}, j.MemId)
 		//fmt.Println(item.Members)
 		//mem := models.Member{}.Search(j.MemId)
-		if len(model.Members) > 0 {
-			m.Items[i] = &Item{
-				Index:       i,
-				Name:        j.Name,
-				Mobile:      model.Members[0].Mobile,
-				Remarks:     j.Remarks,
-				ArrivalDate: j.ArrivalDate,
-			}
+		m.Items[i] = &Item{
+			Index:       i,
+			Name:        j.Name,
+			Mobile:      model.Member.Mobile,
+			Remarks:     j.Remarks,
+			ArrivalDate: j.ArrivalDate,
 		}
 	}
 	return m
 }
 
-//
 func ComboModel() *ItemModel {
 	memList := models.Combo{}.Search()
 	m := &ItemModel{table: "combo", Items: make([]*Item, len(memList))}
@@ -291,9 +291,8 @@ func ComboModel() *ItemModel {
 	return m
 }
 
-//
 func MemberModel() *ItemModel {
-	memList := models.Member{}.Search(0)
+	memList := models.Member{}.Search()
 	m := &ItemModel{table: "member", Items: make([]*Item, len(memList))}
 	//m.items = make([]*Item, len(memList))
 	for i, j := range memList {
@@ -308,56 +307,46 @@ func MemberModel() *ItemModel {
 }
 
 func (mw *MyMainWindow) OpenMembers() {
-	var outTE *walk.TextEdit
-	if cmd, err := Member(mw.MainWindow); err != nil {
+	if cmd, err := Member(mw); err != nil {
 		log.Print(err)
 	} else if cmd == walk.DlgCmdOK {
-		outTE.SetText(fmt.Sprintf("%+v", "CMD"))
+
 	}
 }
 func (mw *MyMainWindow) OpenEmployees() {
-	var outTE *walk.TextEdit
-	if cmd, err := Employees(mw.MainWindow); err != nil {
+	if cmd, err := Employees(mw); err != nil {
 		log.Print(err)
 	} else if cmd == walk.DlgCmdOK {
-		outTE.SetText(fmt.Sprintf("%+v", "CMD"))
+
 	}
 }
 func (mw *MyMainWindow) OpenPreBooks() {
-	var outTE *walk.TextEdit
 	if cmd, err := PreBooks(mw); err != nil {
 		log.Print(err)
 	} else if cmd == walk.DlgCmdOK {
-		outTE.SetText(fmt.Sprintf("%+v", "CMD"))
 	}
 }
 
 func (mw *MyMainWindow) OpenProducts() {
-	var outTE *walk.TextEdit
-	if cmd, err := Products(mw.MainWindow); err != nil {
+	if cmd, err := Products(mw); err != nil {
 		log.Print(err)
 	} else if cmd == walk.DlgCmdOK {
-		outTE.SetText(fmt.Sprintf("%+v", "CMD"))
 	}
 }
 
 func (mw *MyMainWindow) OpenCombos() {
-	var outTE *walk.TextEdit
-	if cmd, err := Combos(mw.MainWindow); err != nil {
+	if cmd, err := Combos(mw); err != nil {
 		log.Print(err)
 	} else if cmd == walk.DlgCmdOK {
 		fmt.Println("OK")
-		outTE.SetText(fmt.Sprintf("%+v", "CMD"))
 	}
 }
 
 func (mw *MyMainWindow) OpenRecords() {
-	var outTE *walk.TextEdit
-	if cmd, err := Records(mw.MainWindow); err != nil {
+	if cmd, err := Records(mw); err != nil {
 		log.Print(err)
 	} else if cmd == walk.DlgCmdOK {
 		fmt.Println("OK")
-		outTE.SetText(fmt.Sprintf("%+v", "CMD"))
 	}
 }
 
@@ -367,10 +356,17 @@ func (mw *MyMainWindow) NewMember() {
 		log.Print(err)
 	} else if cmd == walk.DlgCmdOK {
 		//fmt.Println("OK", member)
-		//models.Save(member)
-		model.Member = member
-		model.Save("member")
-		//member.Save()
+		member.Save()
+		walk.MsgBox(mw, "成功", "会员添加完成！.", walk.MsgBoxIconInformation)
+		if mw.model != nil {
+			mw.model.Items = append(mw.model.Items, &Item{
+				Index:   mw.model.Len(),
+				Name:    member.Name,
+				Mobile:  member.Mobile,
+				Remarks: member.Remarks,
+			})
+			mw.model.PublishRowsReset()
+		}
 		//outTE.SetText(fmt.Sprintf("%+v", member))
 	}
 }
@@ -382,9 +378,17 @@ func (mw *MyMainWindow) NewEmployee() {
 		log.Print(err)
 	} else if cmd == walk.DlgCmdOK {
 		//fmt.Println("OK", emp)
-		model.Employee = emp
-		model.Save("Employee")
-		//emp.Save()
+		emp.Save()
+		walk.MsgBox(mw, "成功", "员工添加完成！.", walk.MsgBoxIconInformation)
+		if mw.model != nil {
+			mw.model.Items = append(mw.model.Items, &Item{
+				Index:   mw.model.Len(),
+				Name:    emp.Name,
+				Mobile:  emp.Mobile,
+				Remarks: emp.Remarks,
+			})
+			mw.model.PublishRowsReset()
+		}
 		//outTE.SetText(fmt.Sprintf("%+v", member))
 	}
 }
@@ -397,30 +401,20 @@ func (mw *MyMainWindow) NewPreBook() {
 		log.Print(err)
 	} else if cmd == walk.DlgCmdOK {
 		//fmt.Println("OK")
-		model.PreBook = preBook
-		model.Save("PreBook")
-		mem := models.Member{}.Search(preBook.MemId)
+		preBook.Save()
+		mem := models.Member{}.Get(preBook.MemId)
 		//fmt.Println(item.Members)
 		if mw.model != nil {
 			mw.model.Items = append(mw.model.Items, &Item{
 				Index:       mw.model.Len(),
 				Name:        preBook.Name,
-				Mobile:      mem[0].Mobile,
+				Mobile:      mem.Mobile,
 				Remarks:     preBook.Remarks,
 				ArrivalDate: preBook.ArrivalDate,
 			})
 			mw.model.PublishRowsReset()
 		}
 
-		//if len(model.Members) > 0 {
-		//	m.Items[i] = &Item{
-		//		Index:       i,
-		//		Name:        j.Name,
-		//		Mobile:      mem.Members[0].Mobile,
-		//		Remarks:     j.Remarks,
-		//		ArrivalDate: j.ArrivalDate,
-		//	}
-		//}
 		now := time.Now()
 		today := time.Date(now.Year(), now.Month(), now.Day()+1, 00, 00, 00, 00, time.UTC)
 		tom := time.Date(now.Year(), now.Month(), now.Day()+2, 00, 00, 00, 00, time.UTC)
@@ -433,7 +427,7 @@ func (mw *MyMainWindow) NewPreBook() {
 			mw.TodayPre.Items = append(mw.TodayPre.Items, &Item{
 				Index:       len(mw.TodayPre.Items),
 				Name:        preBook.Name,
-				Mobile:      mem[0].Mobile,
+				Mobile:      mem.Mobile,
 				Remarks:     preBook.Remarks,
 				ArrivalDate: preBook.ArrivalDate,
 			})
@@ -445,13 +439,13 @@ func (mw *MyMainWindow) NewPreBook() {
 			mw.TomPre.Items = append(mw.TomPre.Items, &Item{
 				Index:       len(mw.TomPre.Items),
 				Name:        preBook.Name,
-				Mobile:      mem[0].Mobile,
+				Mobile:      mem.Mobile,
 				Remarks:     preBook.Remarks,
 				ArrivalDate: preBook.ArrivalDate,
 			})
 			mw.TomPre.ItemModel.PublishRowsReset()
 		}
-
+		walk.MsgBox(mw, "成功", "预约添加完成！.", walk.MsgBoxIconInformation)
 		//preBook.Save()
 		//outTE.SetText(fmt.Sprintf("%+v", member))
 	}
@@ -464,9 +458,17 @@ func (mw *MyMainWindow) NewProd() {
 		log.Print(err)
 	} else if cmd == walk.DlgCmdOK {
 		//fmt.Println("OK")
-		model.Prod = prod
-		model.Save("Prod")
-		//prod.Save()
+		prod.Save()
+		walk.MsgBox(mw, "成功", "项目添加完成！.", walk.MsgBoxIconInformation)
+		if mw.model != nil {
+			mw.model.Items = append(mw.model.Items, &Item{
+				Index:   mw.model.Len(),
+				Name:    prod.Name,
+				Price:   prod.Price,
+				Remarks: prod.Remarks,
+			})
+			mw.model.PublishRowsReset()
+		}
 		//outTE.SetText(fmt.Sprintf("%+v", member))
 	}
 }
@@ -485,8 +487,8 @@ func (mw *MyMainWindow) NewCombo() {
 			Price: combo.Price,
 		})
 		mw.model.PublishRowsReset()
-		//outTE.SetText(fmt.Sprintf("%+v", member))
 	}
+	walk.MsgBox(mw, "成功", "疗程添加完成！.", walk.MsgBoxIconInformation)
 
 }
 
@@ -496,18 +498,59 @@ func (mw *MyMainWindow) NewRecord() {
 		log.Print(err)
 	} else if cmd == walk.DlgCmdOK {
 		fmt.Println("DlgCmdOK")
-		record.Save()
-		mw.model.Items = append(mw.model.Items, &Item{
-			Index: mw.model.Len(),
-			//Name:    record.Name,
-			//Price:   record.Price,
-			Remarks: record.Remarks,
-		})
-		mw.model.PublishRowsReset()
+		if 0 != record.ComboId {
+			//var consume []models.Consume
+			//mem := models.Get(models.Member{}, record.MemId).Member
+			//combo := models.Get(models.Combo{}, record.ComboId).Combo
+			consume := models.Consume{}.Search(record.MemId, record.ComboId)
+			if len(consume) > 0 {
+				if err := consume[0].Save(record); err != nil {
+					walk.MsgBox(mw, "失败", "消费记录添加失败！.", walk.MsgBoxAbortRetryIgnore)
+				}
+
+			}
+			//consume := &models.Consume{}.Search(mem,combo)[0]
+			//consume := &models.Consume{Member: mem, Combo: combo}
+			//consume.Save()
+			//models.ComboRecord{}
+
+		} else {
+			record.Save()
+		}
+
+		if mw.model != nil {
+			mw.model.Items = append(mw.model.Items, &Item{
+				Index: mw.model.Len(),
+				//Name:    record.Name,
+				//Price:   record.Price,
+				Remarks: record.Remarks,
+			})
+			mw.model.PublishRowsReset()
+		}
+		walk.MsgBox(mw, "成功", "消费记录添加完成！.", walk.MsgBoxIconInformation)
+
 	}
 }
 
-func (mw *MyMainWindow) openDialog() {
+func (mw *MyMainWindow) NewCard() {
+	card := &models.Card{Discount: 0.90}
+	if cmd, err := AddCard(mw, card); err != nil {
+		log.Print(err)
+	} else if cmd == walk.DlgCmdOK {
+		fmt.Println("DlgCmdOK")
+		card.Save()
+		walk.MsgBox(mw, "成功", "消费卡添加完成！.", walk.MsgBoxIconInformation)
+		//mw.model.Items = append(mw.model.Items, &Item{
+		//	Index: mw.model.Len(),
+		//	//Name:    record.Name,
+		//	//Price:   record.Price,
+		//	Remarks: prepaid.Remarks,
+		//})
+		//mw.model.PublishRowsReset()
+	}
+}
+
+func (mw *MyMainWindow) OpenDialog() {
 	//var outTE *walk.TextEdit
 	animal := new(models.Animal)
 	if cmd, err := RunAnimalDialog(mw, animal); err != nil {
@@ -516,6 +559,13 @@ func (mw *MyMainWindow) openDialog() {
 		fmt.Println("OK")
 		//outTE.SetText(fmt.Sprintf("%+v", animal))
 	}
+}
+func (mw *MyMainWindow) tvItemactivated() {
+	msg := ``
+	for _, i := range mw.tv.SelectedIndexes() {
+		msg = msg + "\n" + mw.model.Items[i].Name
+	}
+	walk.MsgBox(mw, "title", msg, walk.MsgBoxIconInformation)
 }
 
 func (mw *MyMainWindow) InitDataBase() {
